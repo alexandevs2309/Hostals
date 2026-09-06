@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { GosPage } from '@/app/shared/components/page';
 import { GosPricingGrid } from '@/app/shared/components/pricing-grid';
@@ -333,7 +334,7 @@ export class AboutPage {
 @Component({
     selector: 'page-contact',
     standalone: true,
-    imports: [RouterModule, GosPage, GosCtaSection, RevealDirective],
+    imports: [RouterModule, GosPage, GosCtaSection, RevealDirective, ReactiveFormsModule],
     template: `
         <gos-page
             eyebrow="Contacto"
@@ -342,7 +343,7 @@ export class AboutPage {
             [crumbs]="['Contacto']"
         >
             <div cta class="gos-hero__ctas" style="margin-top: 28px">
-                <a class="gos-btn gos-btn--primary" href="mailto:hola@hospitalityos.com">hola@hospitalityos.com <i class="pi pi-arrow-up-right"></i></a>
+                <a class="gos-btn gos-btn--primary" href="mailto:contacto@auronsuite.com">contacto@auronsuite.com <i class="pi pi-arrow-up-right"></i></a>
             </div>
         </gos-page>
 
@@ -360,33 +361,53 @@ export class AboutPage {
                             </div>
                         }
                     </div>
-                    <form class="gos-contact-form" hosReveal="right" (ngSubmit)="submit()">
-                        <div class="gos-form-row">
-                            <div class="gos-field">
-                                <label for="c-name">Nombre</label>
-                                <input id="c-name" class="gos-input" placeholder="Tu nombre" />
+                    @if (!sent()) {
+                        <form class="gos-contact-form" hosReveal="right" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+                            <div class="gos-form-row">
+                                <div class="gos-field">
+                                    <label for="c-name">Nombre</label>
+                                    <input id="c-name" class="gos-input" formControlName="name" placeholder="Tu nombre" />
+                                    @if (inv('name')) { <span class="gos-error-text">Ingresa tu nombre</span> }
+                                </div>
+                                <div class="gos-field">
+                                    <label for="c-email">Email</label>
+                                    <input id="c-email" type="email" class="gos-input" formControlName="email" placeholder="nombre@hotel.com" />
+                                    @if (inv('email')) { <span class="gos-error-text">Ingresa un email válido</span> }
+                                </div>
                             </div>
                             <div class="gos-field">
-                                <label for="c-email">Email</label>
-                                <input id="c-email" type="email" class="gos-input" placeholder="nombre@hotel.com" />
+                                <label for="c-prop">Tipo de propiedad</label>
+                                <select id="c-prop" class="gos-input" formControlName="propertyType">
+                                    <option value="">Selecciona…</option>
+                                    <option value="Hotel urbano">Hotel urbano</option>
+                                    <option value="Resort">Resort</option>
+                                    <option value="Villas">Villas</option>
+                                    <option value="Grupo / cadena">Grupo / cadena</option>
+                                </select>
+                                @if (inv('propertyType')) { <span class="gos-error-text">Selecciona el tipo de propiedad</span> }
                             </div>
+                            <div class="gos-field">
+                                <label for="c-msg">Mensaje</label>
+                                <textarea id="c-msg" class="gos-input gos-input--area" rows="5" formControlName="message" placeholder="Cuéntanos cómo opera tu hotel…"></textarea>
+                                @if (inv('message')) { <span class="gos-error-text">Cuéntanos en al menos 10 caracteres</span> }
+                            </div>
+                            <button type="submit" [disabled]="submitting()" class="gos-btn gos-btn--primary gos-btn--block">
+                                @if (submitting()) {
+                                    Enviando…
+                                } @else {
+                                    Enviar mensaje <i class="pi pi-send"></i>
+                                }
+                            </button>
+                            <p class="gos-muted" style="text-align: center; font-size: 0.85rem; margin: 14px 0 0">Te respondemos en menos de 24 horas.</p>
+                        </form>
+                    } @else {
+                        <div class="gos-contact-success" hosReveal>
+                            <div class="gos-contact-success__icon"><i class="pi pi-check-circle"></i></div>
+                            <h3>Mensaje enviado</h3>
+                            <p>Gracias por escribirnos. Te contactamos en menos de 24 horas.</p>
+                            <button type="button" class="gos-btn gos-btn--ghost" (click)="resetForm()">Enviar otro mensaje</button>
                         </div>
-                        <div class="gos-field">
-                            <label for="c-prop">Tipo de propiedad</label>
-                            <select id="c-prop" class="gos-input">
-                                <option>Hotel urbano</option>
-                                <option>Resort</option>
-                                <option>Villas</option>
-                                <option>Grupo / cadena</option>
-                            </select>
-                        </div>
-                        <div class="gos-field">
-                            <label for="c-msg">Mensaje</label>
-                            <textarea id="c-msg" class="gos-input gos-input--area" rows="5" placeholder="Cuéntanos cómo opera tu hotel…"></textarea>
-                        </div>
-                        <button type="submit" class="gos-btn gos-btn--primary gos-btn--block">Enviar mensaje <i class="pi pi-send"></i></button>
-                        <p class="gos-muted" style="text-align: center; font-size: 0.85rem; margin: 14px 0 0">Te respondemos en menos de 24 horas.</p>
-                    </form>
+                    }
                 </div>
             </div>
         </section>
@@ -431,6 +452,12 @@ export class AboutPage {
                 flex-direction: column;
                 gap: 18px;
             }
+            .gos-contact-form .gos-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
             .gos-form-row {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
@@ -445,6 +472,37 @@ export class AboutPage {
                 font-size: 0.85rem;
                 font-weight: 600;
             }
+            .gos-contact-success {
+                border: 1px solid var(--hos-teal-300);
+                border-radius: var(--hos-radius-lg);
+                padding: 3rem 2rem;
+                background: var(--hos-surface);
+                box-shadow: var(--hos-shadow);
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.75rem;
+            }
+            .gos-contact-success__icon {
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                font-size: 1.7rem;
+                color: var(--hos-teal-600);
+                background: var(--hos-primary-soft);
+            }
+            .gos-contact-success h3 {
+                margin: 0;
+                font-family: var(--hos-font-display);
+                font-size: 1.4rem;
+            }
+            .gos-contact-success p {
+                margin: 0;
+                color: var(--hos-text-muted);
+            }
             @media (max-width: 820px) {
                 .gos-contact-grid {
                     grid-template-columns: 1fr;
@@ -458,14 +516,56 @@ export class AboutPage {
 })
 export class ContactPage {
     info = [
-        { icon: 'pi pi-envelope', label: 'Email', value: 'hola@hospitalityos.com' },
-        { icon: 'pi pi-phone', label: 'Teléfono', value: '+34 900 123 456' },
-        { icon: 'pi pi-map-marker', label: 'Oficina', value: 'Paseo de la Castellana 100, Madrid' },
-        { icon: 'pi pi-clock', label: 'Horario', value: 'Lunes a viernes · 9:00–18:00' }
+        { icon: 'pi pi-envelope', label: 'Email', value: 'contacto@auronsuite.com' },
+        { icon: 'pi pi-phone', label: 'Teléfono', value: '+1 809 676 9729' },
+        { icon: 'pi pi-map-marker', label: 'Oficina', value: 'Santa Bárbara de Samaná, Rep. Dom.' },
+        { icon: 'pi pi-clock', label: 'Horario', value: 'Lunes a viernes · 9:00 AM – 8:00 PM' }
     ];
 
-    submit(): void {
-        alert('Gracias por escribirnos. Te contactamos pronto.');
+    form: FormGroup;
+    readonly sent = signal(false);
+    readonly submitting = signal(false);
+    private tried = false;
+
+    constructor(private fb: FormBuilder) {
+        this.form = this.fb.group({
+            name: ['', Validators.required],
+            email: ['', [Validators.required, Validators.email]],
+            propertyType: ['', Validators.required],
+            message: ['', [Validators.required, Validators.minLength(10)]]
+        });
+    }
+
+    /** Campo inválido: tocado o intento de envío */
+    inv(field: string): boolean {
+        const c = this.form.get(field);
+        return !!c && c.invalid && (c.touched || this.tried);
+    }
+
+    onSubmit(): void {
+        this.tried = true;
+        this.form.markAllAsTouched();
+        if (this.form.invalid) return;
+
+        /*
+         * TODO — Integración backend (pendiente)
+         * Cuando exista el endpoint, reemplazar con:
+         *   POST /api/v1/contact
+         *   this.submitting.set(true);
+         *   this.http.post(...).subscribe(() => this.sent.set(true));
+         */
+        this.submitting.set(true);
+        // Síncrono por ahora: el interceptor mock puede servir el endpoint luego.
+        window.setTimeout(() => {
+            this.submitting.set(false);
+            this.sent.set(true);
+        }, 600);
+    }
+
+    resetForm(): void {
+        this.form.reset({ propertyType: '' });
+        this.tried = false;
+        this.sent.set(false);
     }
 }
 

@@ -1,6 +1,6 @@
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core';
-import { provideRouter, withComponentInputBinding, withEnabledBlockingInitialNavigation, withInMemoryScrolling } from '@angular/router';
+import { provideRouter, withComponentInputBinding, withEnabledBlockingInitialNavigation, withInMemoryScrolling, withViewTransitions } from '@angular/router';
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { appRoutes } from './app.routes';
@@ -12,6 +12,7 @@ export const appConfig: ApplicationConfig = {
             appRoutes,
             withComponentInputBinding(),
             withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }),
+            withViewTransitions(),
             withEnabledBlockingInitialNavigation()
         ),
         provideHttpClient(withFetch(), withInterceptors([mockApiInterceptor])),

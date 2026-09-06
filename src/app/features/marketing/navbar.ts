@@ -44,7 +44,6 @@ import { NavigationEnd, Router } from '@angular/router';
                     </div>
                 </div>
                 <a class="gos-nav__link" routerLink="/" fragment="operacion">Operación</a>
-                <a class="gos-nav__link" routerLink="/pricing">Precios</a>
                 <a class="gos-nav__link" routerLink="/blog">Recursos</a>
             </nav>
 
@@ -105,6 +104,7 @@ import { NavigationEnd, Router } from '@angular/router';
                 </div>
                 <a class="gos-nav__link" routerLink="/" fragment="operacion" (click)="mobileOpen = false">Operación</a>
                 <a class="gos-nav__link" routerLink="/pricing" (click)="mobileOpen = false">Precios</a>
+                <a class="gos-nav__link" routerLink="/" fragment="testimonios" (click)="mobileOpen = false">Clientes</a>
                 <a class="gos-nav__link" routerLink="/blog" (click)="mobileOpen = false">Recursos</a>
                 <div class="gos-nav__mobile-actions">
                     <div class="gos-nav__swatches gos-nav__swatches--mobile" style="margin-bottom: 16px">
