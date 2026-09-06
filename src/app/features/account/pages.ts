@@ -1240,24 +1240,119 @@ export class ErrorPage {}
 @Component({
     selector: 'account-404',
     standalone: true,
-    imports: [RouterModule, GosAuthCard],
+    imports: [RouterModule],
     template: `
-        <gos-auth-card
-            icon="pi pi-compass"
-            eyebrow="Error 404"
-            title="Página no encontrada"
-            subtitle="La página que buscas no existe o fue movida."
-        >
-            <div class="auth-grid-2" style="gap: 12px">
-                <a class="gos-btn gos-btn--primary gos-btn--block" routerLink="/">Ir al inicio <i class="pi pi-home"></i></a>
+        <div class="not-found">
+            <div class="not-found__orb not-found__orb--1" aria-hidden="true"></div>
+            <div class="not-found__orb not-found__orb--2" aria-hidden="true"></div>
+            <div class="not-found__inner">
+                <div class="not-found__number">404</div>
+                <span class="not-found__eyebrow"><i class="pi pi-compass"></i> Página no encontrada</span>
+                <h1 class="not-found__title">Esta habitación<br>no existe.</h1>
+                <p class="not-found__desc">
+                    La página que buscas fue movida, eliminada o nunca existió.<br>
+                    Volvamos a la recepción.
+                </p>
+                <div class="not-found__actions">
+                    <a class="not-found__btn not-found__btn--primary" routerLink="/">
+                        <i class="pi pi-home"></i> Ir al inicio
+                    </a>
+                    <a class="not-found__btn not-found__btn--ghost" routerLink="/contact">
+                        Contactar soporte
+                    </a>
+                </div>
             </div>
-        </gos-auth-card>
-    `
+        </div>
+    `,
+    styles: [`
+        :host { display: block; }
+        .not-found {
+            position: relative;
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--hos-bg);
+            overflow: hidden; padding: 2rem 1rem;
+        }
+        .not-found__orb {
+            position: absolute; border-radius: 50%;
+            filter: blur(100px); pointer-events: none;
+        }
+        .not-found__orb--1 {
+            width: 600px; height: 600px;
+            top: -200px; right: -150px;
+            background: radial-gradient(circle, rgba(20,184,166,.12), transparent 65%);
+        }
+        .not-found__orb--2 {
+            width: 400px; height: 400px;
+            bottom: -150px; left: -100px;
+            background: radial-gradient(circle, rgba(99,102,241,.1), transparent 65%);
+        }
+        .not-found__inner {
+            position: relative; z-index: 1;
+            text-align: center;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 1.25rem;
+            max-width: 520px;
+        }
+        .not-found__number {
+            font-family: var(--hos-font-display);
+            font-size: clamp(6rem, 18vw, 10rem);
+            font-weight: 900; letter-spacing: -0.06em;
+            line-height: 1;
+            background: var(--hos-grad);
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent; color: transparent;
+            opacity: .15; user-select: none; margin-bottom: -1rem;
+        }
+        .not-found__eyebrow {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 0.72rem; font-weight: 700;
+            letter-spacing: .14em; text-transform: uppercase;
+            color: var(--hos-primary); padding: 7px 14px; border-radius: 999px;
+            border: 1px solid var(--hos-teal-300); background: var(--hos-primary-soft);
+        }
+        .app-dark .not-found__eyebrow { border-color: rgba(var(--hos-accent-rgb),.35); }
+        .not-found__title {
+            font-family: var(--hos-font-display);
+            font-size: clamp(2rem, 5vw, 2.75rem);
+            font-weight: 800; letter-spacing: -0.04em;
+            line-height: 1.1; margin: 0; color: var(--hos-text);
+        }
+        .not-found__desc {
+            color: var(--hos-text-muted); font-size: 1rem; line-height: 1.7; margin: 0;
+        }
+        .not-found__actions {
+            display: flex; gap: 10px; flex-wrap: wrap;
+            justify-content: center; margin-top: .5rem;
+        }
+        .not-found__btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: .875rem 1.5rem; border-radius: 999px;
+            font-size: .9375rem; font-weight: 600;
+            border: 1.5px solid transparent; text-decoration: none;
+            transition: transform .2s, box-shadow .2s, background .15s, color .15s, border-color .15s;
+            font-family: var(--hos-font-sans);
+        }
+        .not-found__btn--primary {
+            background: linear-gradient(180deg, var(--hos-teal-500), var(--hos-teal-700));
+            color: #fff; box-shadow: 0 10px 28px rgba(13,148,136,.3);
+        }
+        .not-found__btn--primary:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(13,148,136,.4); }
+        .app-dark .not-found__btn--primary { color: #042f2e; }
+        .not-found__btn--ghost {
+            background: transparent; color: var(--hos-text-muted); border-color: var(--hos-border);
+        }
+        .not-found__btn--ghost:hover { border-color: var(--hos-primary); color: var(--hos-primary); }
+        @media (max-width: 480px) {
+            .not-found__actions { flex-direction: column; }
+            .not-found__btn { justify-content: center; }
+        }
+    `]
 })
 export class NotFoundPage {}
 
 @Component({
-    selector: 'account-500',
+    selector: 'page-server-error',
     standalone: true,
     imports: [RouterModule, GosAuthCard],
     template: `

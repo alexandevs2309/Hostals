@@ -115,5 +115,7 @@ import { StaggerDirective, RevealDirective } from '@/app/shared/directives/revea
     ]
 })
 export class GosSectionModules {
-    modules = MODULES;
+    // Mostramos 8 módulos (4×2 perfecto). Integraciones tiene su propia
+    // página dedicada y no necesita card aquí.
+    modules = MODULES.filter(m => m.id !== 'integrations');
 }

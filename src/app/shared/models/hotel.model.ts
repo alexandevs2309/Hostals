@@ -77,3 +77,38 @@ export interface ChartPoint {
     label: string;
     value: number;
 }
+
+/** Tono de un pill/delta en los previews de módulos */
+export type PreviewTone = 'teal' | 'green' | 'amber' | 'red' | 'indigo' | 'slate';
+
+export interface ModuleKpi {
+    label: string;
+    value: string;
+    delta: string;
+    tone: PreviewTone;
+}
+
+export interface ModulePreviewItem {
+    title: string;
+    subtitle: string;
+    meta: string;
+    status: string;
+    tone: PreviewTone;
+}
+
+/**
+ * Contenido de un módulo del PMS.
+ * Es el payload de `GET /api/v1/modules/:moduleId` (ahora servido por el
+ * interceptor mock; cuando exista el backend, solo se reemplaza la respuesta).
+ */
+export interface ModuleContent {
+    id: string;
+    icon: string;
+    label: string;
+    color: string;
+    description: string;
+    features: string[];
+    progress: number;
+    kpis: ModuleKpi[];
+    previewItems: ModulePreviewItem[];
+}

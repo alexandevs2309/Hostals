@@ -3,6 +3,7 @@ import { AppLayout } from './app/layout/component/app.layout';
 import { Dashboard } from './app/pages/dashboard/dashboard';
 import { Documentation } from './app/pages/documentation/documentation';
 import { Notfound } from './app/pages/notfound/notfound';
+import { ComingSoonPage } from './app/pages/coming-soon/coming-soon';
 import { MARKETING_ROUTES } from './app/features/marketing/marketing.routes';
 
 export const appRoutes: Routes = [
@@ -12,6 +13,16 @@ export const appRoutes: Routes = [
         component: AppLayout,
         children: [
             { path: '', component: Dashboard },
+            // ── Módulos PMS (en desarrollo) ──────────────────────────
+            { path: 'reservations', component: ComingSoonPage, data: { module: 'reservations' } },
+            { path: 'rooms',        component: ComingSoonPage, data: { module: 'rooms'        } },
+            { path: 'guests',       component: ComingSoonPage, data: { module: 'guests'       } },
+            { path: 'housekeeping', component: ComingSoonPage, data: { module: 'housekeeping' } },
+            { path: 'maintenance',  component: ComingSoonPage, data: { module: 'maintenance'  } },
+            { path: 'finance',      component: ComingSoonPage, data: { module: 'finance'      } },
+            { path: 'analytics',    component: ComingSoonPage, data: { module: 'analytics'    } },
+            { path: 'settings',     component: ComingSoonPage, data: { module: 'settings'     } },
+            // ── Sakai demos ──────────────────────────────────────────
             { path: 'uikit', loadChildren: () => import('./app/pages/uikit/uikit.routes') },
             { path: 'documentation', component: Documentation },
             { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') }

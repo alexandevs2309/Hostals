@@ -1,4 +1,4 @@
-import { BookingRow, ChartPoint, FaqItem, HousekeepingRoom, HotelMetrics, MaintenanceTicket, ModuleInfo, NavItem, Plan, Testimonial } from '@/app/shared/models/hotel.model';
+import { BookingRow, ChartPoint, FaqItem, HousekeepingRoom, HotelMetrics, MaintenanceTicket, ModuleContent, ModuleInfo, NavItem, Plan, Testimonial } from '@/app/shared/models/hotel.model';
 
 /*
  * TODO (Backend Integration) — Métricas del hotel activo
@@ -376,3 +376,195 @@ export const SIDEBAR_NAV: NavItem[] = [
     { label: 'Analytics', icon: 'pi pi-chart-line', route: '/app/analytics' },
     { label: 'Configuración', icon: 'pi pi-cog', route: '/app/settings' }
 ];
+
+/*
+ * TODO (Backend Integration) — Contenido de módulos del PMS
+ * ─────────────────────────────────────────────────────────────────
+ * Payload de pixel de cada módulo.
+ * En producción es servido por el endpoint:
+ *   GET /api/v1/modules/:moduleId
+ *
+ * Estructura esperada por el componente:
+ *   id, icon, label, color, description, features[], progress,
+ *   kpis: { label, value, delta, tone }[],
+ *   previewItems: { title, subtitle, meta, status, tone }[]
+ * ─────────────────────────────────────────────────────────────────
+ */
+export const MODULE_CONTENT: Record<string, ModuleContent> = {
+    reservations: {
+        id: 'reservations',
+        icon: 'pi pi-calendar',
+        label: 'Reservaciones & PMS',
+        color: '#14b8a6',
+        description: 'Calendario de disponibilidad, tarifas, check-in, check-out y folios centralizados.',
+        features: ['Calendario de disponibilidad en tiempo real', 'Check-in y check-out en 1 clic', 'Folios por huésped', 'Tarifas dinámicas por canal', 'Sincronización con channel manager'],
+        progress: 45,
+        kpis: [
+            { label: 'Reservas hoy', value: '34', delta: '+8 hoy', tone: 'teal' },
+            { label: 'Ocupación', value: '82.4%', delta: '+3.1 pts', tone: 'teal' },
+            { label: 'ADR', value: '$198', delta: '+$12', tone: 'teal' },
+            { label: 'Ingresos hoy', value: '$18,420', delta: '+$2,104', tone: 'teal' }
+        ],
+        previewItems: [
+            { title: 'María Soler', subtitle: 'Hab 301 · 12–15 may', meta: '$630', status: 'Check-in', tone: 'teal' },
+            { title: 'Jorge Tapia', subtitle: 'Hab 214 · 12–16 may', meta: '$840', status: 'Confirmada', tone: 'green' },
+            { title: 'Ana Vidal', subtitle: 'Hab 105 · 13–14 may', meta: '$210', status: 'Confirmada', tone: 'green' },
+            { title: 'Luis Peralta', subtitle: 'Hab 408 · 13–17 may', meta: '$1,120', status: 'Pendiente', tone: 'amber' },
+            { title: 'Carla Duarte', subtitle: 'Hab 118 · 14–14 may', meta: '$190', status: 'Check-out', tone: 'slate' }
+        ]
+    },
+    rooms: {
+        id: 'rooms',
+        icon: 'pi pi-building',
+        label: 'Habitaciones',
+        color: '#6366f1',
+        description: 'Inventario de habitaciones, tipos, categorías y estado en tiempo real.',
+        features: ['Plano de piso interactivo', 'Tipos y categorías configurables', 'Estado en tiempo real', 'Bloqueos por mantenimiento', 'Tarifas centralizadas'],
+        progress: 38,
+        kpis: [
+            { label: 'Habitaciones', value: '142', delta: '8 tipos', tone: 'indigo' },
+            { label: 'Disponibles hoy', value: '24', delta: '17%', tone: 'indigo' },
+            { label: 'En limpieza', value: '8', delta: '3 en curso', tone: 'amber' },
+            { label: 'Mantenimiento', value: '4', delta: '2 críticos', tone: 'red' }
+        ],
+        previewItems: [
+            { title: '101 · Superior', subtitle: 'Piso 1', meta: 'Limpia', status: 'Lista', tone: 'green' },
+            { title: '102 · Superior', subtitle: 'Piso 1', meta: 'Cámara Lidia R.', status: 'Pendiente', tone: 'amber' },
+            { title: '103 · Deluxe', subtitle: 'Piso 1', meta: 'Inspección', status: 'Inspección', tone: 'indigo' },
+            { title: '104 · Deluxe', subtitle: 'Piso 1', meta: 'Aire acondicionado', status: 'Mantenimiento', tone: 'red' },
+            { title: '105 · Deluxe', subtitle: 'Piso 1', meta: 'Vista al mar', status: 'Ocupada', tone: 'slate' }
+        ]
+    },
+    guests: {
+        id: 'guests',
+        icon: 'pi pi-user',
+        label: 'Huéspedes',
+        color: '#f59e0b',
+        description: 'Perfil 360° de cada huésped con historial, preferencias y gasto acumulado.',
+        features: ['Perfil completo con historial', 'Preferencias y solicitudes', 'Gasto acumulado (LTV)', 'Segmentación y etiquetas', 'Programa de fidelización'],
+        progress: 32,
+        kpis: [
+            { label: 'Huéspedes en casa', value: '286', delta: '+12 hoy', tone: 'amber' },
+            { label: 'Llegadas hoy', value: '34', delta: '+6', tone: 'teal' },
+            { label: 'Salidas hoy', value: '21', delta: '-3', tone: 'slate' },
+            { label: 'LTV promedio', value: '$1,240', delta: '+4%', tone: 'amber' }
+        ],
+        previewItems: [
+            { title: 'Laura Méndez', subtitle: 'Suite 402 · 12–15 may', meta: '6 estancias', status: 'Frecuente', tone: 'amber' },
+            { title: 'Andrés Celi', subtitle: 'Hab 305 · 12–14 may', meta: '3 estancias', status: 'VIP', tone: 'teal' },
+            { title: 'Valentina Ríos', subtitle: 'Hab 208 · 13–16 may', meta: '1 estancia', status: 'Nuevo', tone: 'indigo' },
+            { title: 'Ricardo Salas', subtitle: 'Suite 501 · 10–16 may', meta: '9 estancias', status: 'Frecuente', tone: 'amber' },
+            { title: 'Carla Duarte', subtitle: 'Hab 118 · 14–14 may', meta: '2 estancias', status: 'Check-out', tone: 'slate' }
+        ]
+    },
+    housekeeping: {
+        id: 'housekeeping',
+        icon: 'pi pi-box',
+        label: 'Housekeeping',
+        color: '#22c55e',
+        description: 'Asignación de habitaciones, prioridades, inspecciones y estados en vivo.',
+        features: ['Panel de turno para cámaras', 'Prioridades automáticas', 'Inspecciones digitales', 'Sincronización con recepción', 'Métricas de productividad'],
+        progress: 28,
+        kpis: [
+            { label: 'Pendientes', value: '12', delta: '3 alta prioridad', tone: 'amber' },
+            { label: 'En progreso', value: '8', delta: '2 cámaras', tone: 'green' },
+            { label: 'En inspección', value: '5', delta: '+2 hoy', tone: 'indigo' },
+            { label: 'Listas', value: '24', delta: '72% del inventario', tone: 'green' }
+        ],
+        previewItems: [
+            { title: '101', subtitle: 'Cámara Lidia R.', meta: 'Lista', status: 'Limpia', tone: 'green' },
+            { title: '102', subtitle: 'Cámara Lidia R.', meta: 'Prioridad alta', status: 'Pendiente', tone: 'amber' },
+            { title: '103', subtitle: 'Cámara Marta P.', meta: 'Prioridad media', status: 'Inspección', tone: 'indigo' },
+            { title: '104', subtitle: 'Mantenimiento', meta: 'A/C', status: 'Bloqueada', tone: 'red' },
+            { title: '105', subtitle: 'Cámara Marta P.', meta: 'Lista', status: 'Limpia', tone: 'green' }
+        ]
+    },
+    maintenance: {
+        id: 'maintenance',
+        icon: 'pi pi-wrench',
+        label: 'Mantenimiento',
+        color: '#ef4444',
+        description: 'Tickets de incidencias, prioridades, responsables y cumplimiento de SLA.',
+        features: ['Tickets desde cualquier módulo', 'Prioridades y SLA', 'Asignación por especialidad', 'Historial por activo', 'Alertas de vencimiento'],
+        progress: 25,
+        kpis: [
+            { label: 'Tickets abiertos', value: '6', delta: '1 crítico', tone: 'red' },
+            { label: 'En progreso', value: '2', delta: '2 técnicos', tone: 'amber' },
+            { label: 'Resueltos hoy', value: '3', delta: '94% SLA', tone: 'green' },
+            { label: 'Tiempo medio', value: '4.2h', delta: '-38 min', tone: 'teal' }
+        ],
+        previewItems: [
+            { title: 'Hab 104 · Aire acondicionado', subtitle: 'Técnico Prex', meta: 'SLA 2h', status: 'Crítico', tone: 'red' },
+            { title: 'Hab 207 · Ducha gotea', subtitle: 'Germán', meta: 'SLA 6h', status: 'En progreso', tone: 'amber' },
+            { title: 'Hab 312 · TV sin señal', subtitle: 'Miguel', meta: 'SLA 24h', status: 'Abierto', tone: 'amber' },
+            { title: 'Hab 109 · Cambio de foco', subtitle: 'Miguel', meta: 'SLA 48h', status: 'Resuelto', tone: 'green' },
+            { title: 'Hab 415 · Persiana atascada', subtitle: 'Germán', meta: 'SLA 24h', status: 'En progreso', tone: 'amber' }
+        ]
+    },
+    finance: {
+        id: 'finance',
+        icon: 'pi pi-dollar',
+        label: 'Finanzas',
+        color: '#0ea5e9',
+        description: 'Ingresos, gastos, cierres de caja y reportes de rentabilidad.',
+        features: ['Folios y facturación', 'Cierres de caja auditables', 'Ingresos por área', 'Reportes exportables', 'Conciliación automática'],
+        progress: 20,
+        kpis: [
+            { label: 'Ingresos hoy', value: '$18,420', delta: '+12%', tone: 'teal' },
+            { label: 'Depósitos', value: '$6,120', delta: '+$890', tone: 'teal' },
+            { label: 'Egresos', value: '$4,180', delta: '-2%', tone: 'slate' },
+            { label: 'Cierre de caja', value: 'OK', delta: '16:45', tone: 'green' }
+        ],
+        previewItems: [
+            { title: 'Folio #2841 · María Soler', subtitle: 'Check-in 12 may', meta: '+$630', status: 'Abierto', tone: 'teal' },
+            { title: 'Folio #2840 · Jorge Tapia', subtitle: 'Check-in 12 may', meta: '+$840', status: 'Abierto', tone: 'teal' },
+            { title: 'Pago · Stripe', subtitle: 'Anticipo Jorge Tapia', meta: '+$420', status: 'Aplicado', tone: 'green' },
+            { title: 'Gasto · Lavandería', subtitle: 'Proveedor local', meta: '-$180', status: 'Conciliado', tone: 'slate' },
+            { title: 'Folio #2821 · Carla Duarte', subtitle: 'Check-out 14 may', meta: '+$190', status: 'Cerrado', tone: 'green' }
+        ]
+    },
+    analytics: {
+        id: 'analytics',
+        icon: 'pi pi-chart-line',
+        label: 'Analytics',
+        color: '#8b5cf6',
+        description: 'Occupancy, ADR, RevPAR, revenue y tendencias en tiempo real.',
+        features: ['KPIs en tiempo real', 'Tendencias comparativas', 'Comparativas entre propiedades', 'Reportes automáticos', 'Exportación para gerencia'],
+        progress: 35,
+        kpis: [
+            { label: 'Occupancy', value: '82.4%', delta: '+3.1 pts', tone: 'indigo' },
+            { label: 'ADR', value: '$198', delta: '+$12', tone: 'indigo' },
+            { label: 'RevPAR', value: '$163', delta: '+$15', tone: 'indigo' },
+            { label: 'Booking window', value: '21 días', delta: '+4 días', tone: 'teal' }
+        ],
+        previewItems: [
+            { title: 'Occupancy semanal', subtitle: 'Lun 62% → Dom 82%', meta: '+20 pts', status: 'Al alza', tone: 'green' },
+            { title: 'Ingresos del mes', subtitle: 'Agosto 2026', meta: '$212k', status: '+8%', tone: 'teal' },
+            { title: 'Origen de reservas', subtitle: 'OTAs 46% · Directo 38%', meta: '—', status: 'Directo al alza', tone: 'indigo' },
+            { title: 'No-show rate', subtitle: 'Últimos 30 días', meta: '6.1%', status: 'Bajo', tone: 'green' },
+            { title: 'Guest satisfaction', subtitle: 'Encuesta post-estancia', meta: '4.6 / 5', status: 'Excelente', tone: 'amber' }
+        ]
+    },
+    settings: {
+        id: 'settings',
+        icon: 'pi pi-cog',
+        label: 'Configuración',
+        color: '#64748b',
+        description: 'Configuración de la propiedad, usuarios, roles y preferencias.',
+        features: ['Gestión de usuarios y roles', 'Configuración de la propiedad', 'Integraciones', 'Notificaciones', 'Seguridad y accesos'],
+        progress: 15,
+        kpis: [
+            { label: 'Usuarios', value: '12', delta: '5 roles', tone: 'slate' },
+            { label: 'Integraciones', value: '3', delta: '2 activas', tone: 'teal' },
+            { label: 'Habitaciones config.', value: '142', delta: '8 tipos', tone: 'slate' },
+            { label: 'Estado de la API', value: 'Activa', delta: '100% uptime', tone: 'green' }
+        ],
+        previewItems: [
+            { title: 'Hotel Aurora', subtitle: 'Propiedad principal', meta: '142 hab.', status: 'Activa', tone: 'green' },
+            { title: 'María · Propietario', subtitle: 'Acceso total', meta: 'Propietario', status: 'Activo', tone: 'teal' },
+            { title: 'Channel Manager', subtitle: 'Booking.com · Expedia', meta: 'v2.1', status: 'Conectado', tone: 'green' },
+            { title: 'Pasarela de pago', subtitle: 'Stripe', meta: 'Producción', status: 'Activa', tone: 'amber' },
+            { title: 'API keys', subtitle: 'Última rotación', meta: 'hace 30 días', status: 'Segura', tone: 'slate' }
+        ]
+    }
+};

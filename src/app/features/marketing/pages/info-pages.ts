@@ -35,17 +35,27 @@ import { RevealDirective, StaggerDirective } from '@/app/shared/directives/revea
                     <h2 class="gos-title gos-title--center" style="font-size: clamp(1.8rem, 3.4vw, 2.5rem)">Qué incluye cada plan</h2>
                 </div>
                 <div class="gos-compare" hosReveal>
+                    <!-- cabecera de columnas -->
+                    <div class="gos-compare__row gos-compare__row--head">
+                        <div class="gos-compare__label"></div>
+                        <div class="gos-compare__cell gos-compare__cell--head">Essential</div>
+                        <div class="gos-compare__cell gos-compare__cell--head">
+                            Professional
+                            <span class="gos-compare__popular">Popular</span>
+                        </div>
+                        <div class="gos-compare__cell gos-compare__cell--head">Enterprise</div>
+                    </div>
                     @for (row of compareRows; track row.label) {
                         <div class="gos-compare__row">
                             <div class="gos-compare__label">{{ row.label }}</div>
                             @for (cell of row.cells; track $index) {
                                 <div class="gos-compare__cell">
-                                    @if (cell === '—') {
+                                    @if (cell === '—' || cell === '' || cell == null) {
                                         <span class="gos-muted">—</span>
-                                    } @else if (cell) {
+                                    } @else if (cell === '✓') {
                                         <i class="pi pi-check" style="color: var(--hos-teal-500)"></i>
                                     } @else {
-                                        <span class="gos-muted">—</span>
+                                        <span class="gos-compare__val">{{ cell }}</span>
                                     }
                                 </div>
                             }
@@ -89,6 +99,11 @@ import { RevealDirective, StaggerDirective } from '@/app/shared/directives/revea
             .gos-compare__row + .gos-compare__row {
                 border-top: 1px solid var(--hos-border);
             }
+            .gos-compare__row--head {
+                background: var(--hos-bg-soft);
+                position: sticky;
+                top: 0;
+            }
             .gos-compare__label,
             .gos-compare__cell {
                 padding: 16px 20px;
@@ -102,6 +117,33 @@ import { RevealDirective, StaggerDirective } from '@/app/shared/directives/revea
                 justify-content: center;
                 align-items: center;
             }
+            .gos-compare__cell--head {
+                font-size: 0.8rem;
+                font-weight: 800;
+                color: var(--hos-text);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+            }
+            .gos-compare__popular {
+                font-size: 0.62rem;
+                font-weight: 800;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: var(--hos-primary-soft);
+                color: var(--hos-primary);
+                border: 1px solid var(--hos-teal-300);
+                letter-spacing: .04em;
+            }
+            .app-dark .gos-compare__popular {
+                border-color: rgba(var(--hos-accent-rgb),.35);
+            }
+            .gos-compare__val {
+                font-size: 0.82rem;
+                font-weight: 600;
+                color: var(--hos-text);
+            }
         `
     ]
 })
@@ -114,13 +156,20 @@ export class PricingPage {
     ];
 
     compareRows = [
-        { label: 'Habitaciones', cells: ['5', '80', '∞'] },
-        { label: 'Módulos', cells: ['1', 'Todos', 'Todos'] },
-        { label: 'Huéspedes', cells: ['—', '✓', '✓'] },
-        { label: 'Analytics', cells: ['—', '✓', '✓'] },
-        { label: 'Multi-propiedad', cells: ['—', '—', '✓'] },
-        { label: 'API', cells: ['—', '✓', '✓'] },
-        { label: 'Soporte prioritario', cells: ['—', '—', '✓'] }
+        { label: 'Habitaciones',           cells: ['Hasta 30', 'Hasta 150', 'Ilimitadas'] },
+        { label: 'Reservaciones & PMS',    cells: ['✓', '✓', '✓'] },
+        { label: 'Gestión de habitaciones',cells: ['✓', '✓', '✓'] },
+        { label: 'Perfiles de huéspedes',  cells: ['✓', '✓', '✓'] },
+        { label: 'Housekeeping',           cells: ['—', '✓', '✓'] },
+        { label: 'Mantenimiento con SLA',  cells: ['—', '✓', '✓'] },
+        { label: 'Finanzas y cierres',     cells: ['—', '✓', '✓'] },
+        { label: 'Analytics',              cells: ['—', '✓', '✓'] },
+        { label: 'Automatizaciones',       cells: ['—', '✓', '✓'] },
+        { label: 'Multi-propiedad',        cells: ['—', '—', '✓'] },
+        { label: 'Roles y permisos',       cells: ['—', '—', '✓'] },
+        { label: 'SSO / SAML',             cells: ['—', '—', '✓'] },
+        { label: 'API e integraciones',    cells: ['—', 'Esenciales', 'Ilimitadas'] },
+        { label: 'Soporte',                cells: ['Email', 'Prioritario', 'Dedicado'] },
     ];
 }
 
