@@ -9,45 +9,45 @@ interface RichTestimonial {
     property: string;
     propertyType: string;
     avatarColor: 'primary' | 'alt' | 'warm' | 'cool';
-    highlight?: string; // palabra o frase a resaltar del quote
+    avatar: string;
 }
 
 const RICH_TESTIMONIALS: RichTestimonial[] = [
     {
         quote: 'Hospitality OS nos permitió conectar recepción, housekeeping y gerencia en una sola operación. Dejamos de usar cinco herramientas distintas.',
-        highlight: 'cinco herramientas distintas',
         name: 'Laura Méndez',
         role: 'Gerente General',
         property: 'Hotel Aurora',
         propertyType: 'Hotel boutique · 48 hab.',
-        avatarColor: 'primary'
+        avatarColor: 'primary',
+        avatar: '/images/people/avatar-laura.jpg'
     },
     {
         quote: 'La operación dejó de depender de hojas de cálculo y mensajes de WhatsApp. Todo vive en un solo lugar y el equipo lo adoptó en horas.',
-        highlight: 'lo adoptó en horas',
         name: 'Ricardo Salas',
         role: 'Director de Operaciones',
         property: 'Grand Caribe Resort',
         propertyType: 'Resort todo incluido · 320 hab.',
-        avatarColor: 'cool'
+        avatarColor: 'cool',
+        avatar: '/images/people/avatar-ricardo.jpg'
     },
     {
         quote: 'El check-in pasó de minutos a segundos. Las cámaras siempre saben qué habitación sigue y recepción ve el estado en vivo.',
-        highlight: 'de minutos a segundos',
         name: 'Valentina Ríos',
         role: 'Jefa de Recepción',
         property: 'Casa Palma',
         propertyType: 'Villa de lujo · 12 hab.',
-        avatarColor: 'alt'
+        avatarColor: 'alt',
+        avatar: '/images/people/avatar-valentina.jpg'
     },
     {
         quote: 'Los reportes de finanzas se generan solos. Cerramos el mes en un día. Antes nos llevaba una semana completa.',
-        highlight: 'en un día',
         name: 'Andrés Celi',
         role: 'CFO',
         property: 'Ocean Suites Group',
         propertyType: 'Multi-propiedad · 4 hoteles',
-        avatarColor: 'warm'
+        avatarColor: 'warm',
+        avatar: '/images/people/avatar-andres.jpg'
     }
 ];
 
@@ -56,7 +56,7 @@ const RICH_TESTIMONIALS: RichTestimonial[] = [
     standalone: true,
     imports: [CommonModule, RevealDirective, StaggerDirective],
     template: `
-        <section class="tm-section">
+        <section class="tm-section" id="testimonios">
             <div class="tm-bg" aria-hidden="true"></div>
 
             <div class="gos-container">
@@ -78,7 +78,11 @@ const RICH_TESTIMONIALS: RichTestimonial[] = [
                     </blockquote>
                     <div class="tm-featured__meta">
                         <div class="tm-avatar tm-avatar--lg" [class]="'tm-avatar--' + featured.avatarColor">
-                            {{ initials(featured.name) }}
+                            @if (featured.avatar) {
+                                <img [src]="featured.avatar" [alt]="featured.name" class="tm-avatar__img" />
+                            } @else {
+                                {{ initials(featured.name) }}
+                            }
                         </div>
                         <div class="tm-featured__info">
                             <span class="tm-featured__name">{{ featured.name }}</span>
@@ -117,7 +121,11 @@ const RICH_TESTIMONIALS: RichTestimonial[] = [
                             <!-- autor -->
                             <div class="tm-card__author">
                                 <div class="tm-avatar tm-avatar--md" [class]="'tm-avatar--' + t.avatarColor">
-                                    {{ initials(t.name) }}
+                                    @if (t.avatar) {
+                                        <img [src]="t.avatar" [alt]="t.name" class="tm-avatar__img" />
+                                    } @else {
+                                        {{ initials(t.name) }}
+                                    }
                                 </div>
                                 <div class="tm-card__info">
                                     <span class="tm-card__name">{{ t.name }}</span>
@@ -318,6 +326,12 @@ const RICH_TESTIMONIALS: RichTestimonial[] = [
             border-radius: 50%;
             display: grid; place-items: center;
             font-weight: 800; color: #fff; flex-shrink: 0;
+            overflow: hidden;
+        }
+        .tm-avatar__img {
+            width: 100%; height: 100%;
+            object-fit: cover; object-position: center top;
+            border-radius: 50%;
         }
         .tm-avatar--lg { width: 52px; height: 52px; font-size: 1rem; }
         .tm-avatar--md { width: 40px; height: 40px; font-size: 0.8rem; }

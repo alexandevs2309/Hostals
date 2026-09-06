@@ -43,7 +43,19 @@ import { CountUpDirective } from '@/app/shared/directives/count-up.directive';
 
                 <div class="gos-hero__micro">Pensado para hoteles, resorts, villas y propiedades independientes.</div>
 
-                <!-- Banda de métricas -->
+                <!-- Banda de social proof -->
+                <div class="gos-hero__social-proof">
+                    <div class="gos-hero__avatars">
+                        <img src="/images/people/avatar-laura.jpg"     alt="Usuario" class="gos-hero__av" />
+                        <img src="/images/people/avatar-ricardo.jpg"   alt="Usuario" class="gos-hero__av" />
+                        <img src="/images/people/avatar-valentina.jpg" alt="Usuario" class="gos-hero__av" />
+                        <img src="/images/people/avatar-andres.jpg"    alt="Usuario" class="gos-hero__av" />
+                        <img src="/images/people/avatar-extra1.jpg"    alt="Usuario" class="gos-hero__av" />
+                    </div>
+                    <span class="gos-hero__social-text">
+                        <strong>4,200+</strong> profesionales hoteleros ya operan con nosotros
+                    </span>
+                </div>
                 <div class="gos-hero__metrics">
                     <div class="gos-hero__metric">
                         <span class="gos-hero__metric-value" hosCountUp>4,200+</span>
@@ -75,6 +87,32 @@ import { CountUpDirective } from '@/app/shared/directives/count-up.directive';
         </section>
     `,
     styles: [`
+        /* ── Social proof ──────────────────────────────────────── */
+        .gos-hero__social-proof {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            animation: gos-fade-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.5s both;
+        }
+        .gos-hero__avatars { display: flex; }
+        .gos-hero__av {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: 2.5px solid rgba(255,255,255,.7);
+            object-fit: cover; object-position: center top;
+            margin-left: -10px;
+            transition: margin .2s ease;
+        }
+        .gos-hero__av:first-child { margin-left: 0; }
+        .gos-hero__avatars:hover .gos-hero__av { margin-left: -6px; }
+        .gos-hero__social-text {
+            font-size: 0.82rem;
+            color: rgba(255,255,255,.75);
+        }
+        .gos-hero__social-text strong { color: #fff; font-weight: 700; }
+
         /* ── Métricas ──────────────────────────────────────────── */
         .gos-hero__metrics {
             display: flex;

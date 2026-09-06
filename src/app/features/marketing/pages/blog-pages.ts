@@ -11,6 +11,7 @@ export interface BlogPost {
     date: string;
     read: string;
     thumb: string;
+    image: string;
     excerpt: string;
     html: string;
 }
@@ -23,6 +24,7 @@ export const BLOG_POSTS: BlogPost[] = [
         date: '29 Ago 2026',
         read: '6 min',
         thumb: 'gos-thumb-teal',
+        image: '/images/properties/blog-analytics.jpg',
         excerpt: 'Dos métricas, una sola historia. Aprende a leer el rendimiento real de tu hotel sin confundir tarifa promedio con rentabilidad.',
         html: `
             <p>Durante años, muchos gerentes miden su hotel solo por la tarifa promedio por habitación. Pero el ADR cuenta la mitad de la historia: dice cuánto cobras, no cuánto vendes.</p>
@@ -43,6 +45,7 @@ export const BLOG_POSTS: BlogPost[] = [
         date: '20 Ago 2026',
         read: '5 min',
         thumb: 'gos-thumb-slate',
+        image: '/images/properties/blog-housekeeping.jpg',
         excerpt: 'Tiempos de limpieza, prioridades por checkout y estados sincronizados. Cómo el housekeeping deja de ser el cuello de botella de tu hotel.',
         html: `
             <p>El housekeeping no es el fin del proceso: es la mitad. La habitación que no está lista a las 14:00 es una venta que se pierde.</p>
@@ -62,6 +65,7 @@ export const BLOG_POSTS: BlogPost[] = [
         date: '12 Ago 2026',
         read: '4 min',
         thumb: 'gos-thumb-rose',
+        image: '/images/properties/blog-booking.jpg',
         excerpt: 'El overbooking es el error más caro y más evitable de la hostelería. Cómo un estado de habitación sincronizado lo elimina de raíz.',
         html: `
             <p>Un overbooking no es solo una noche perdida: es una reseña negativa, un huésped molesto y un equipo en crisis jugando a reasignar habitaciones a las 19:00.</p>
@@ -81,6 +85,7 @@ export const BLOG_POSTS: BlogPost[] = [
         date: '5 Ago 2026',
         read: '5 min',
         thumb: 'gos-thumb-indigo',
+        image: '/images/properties/blog-guest.jpg',
         excerpt: 'El huésped que ya está en tu hotel es tu mayor oportunidad. Preferencias, historial y gasto acumulado para ofrecer lo correcto en el momento correcto.',
         html: `
             <p>Conseguir un huésped nuevo cuesta dinero. Aumentar el gasto de un huésped que ya duerme en tu casa solo cuesta contexto.</p>
@@ -100,6 +105,7 @@ export const BLOG_POSTS: BlogPost[] = [
         date: '28 Jul 2026',
         read: '6 min',
         thumb: 'gos-thumb-emerald',
+        image: '/images/properties/blog-finance.jpg',
         excerpt: 'El cierre contable consume días valiosos de gerencia. Cómo la conciliación automática y los folios centralizados lo reducen a horas.',
         html: `
             <p>El cierre de mes es el ritual que pocos disfrutan: cuadrar hojas, buscar discrepancias y pedir reportes a cada departamento.</p>
@@ -119,6 +125,7 @@ export const BLOG_POSTS: BlogPost[] = [
         date: '15 Jul 2026',
         read: '4 min',
         thumb: 'gos-thumb-amber',
+        image: '/images/properties/blog-maintenance.jpg',
         excerpt: 'Cada habitación fuera de servicio por mantenimiento es una venta perdida. Tickets inteligentes y SLA para resolver antes, no después.',
         html: `
             <p>Cuando un clima se rompe en temporada alta, la cuenta no es la reparación: es la habitación que dejas de vender mientras esperas.</p>
@@ -155,7 +162,12 @@ export const BLOG_POSTS: BlogPost[] = [
                     @for (post of posts; track post.slug) {
                         <a class="gos-blog-card" [routerLink]="['/blog', post.slug]" hosReveal>
                             <div class="gos-blog-card__thumb" [class]="post.thumb">
-                                <div class="thumb-beams"></div>
+                                @if (post.image) {
+                                    <img [src]="post.image" [alt]="post.title"
+                                         class="blog-thumb-img" loading="lazy" />
+                                } @else {
+                                    <div class="thumb-beams"></div>
+                                }
                             </div>
                             <div class="gos-blog-card__body">
                                 <div class="gos-blog-card__meta">

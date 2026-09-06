@@ -201,6 +201,18 @@ export class PricingPage {
                         integrada y que respeta el tiempo del equipo.
                     </p>
                 </div>
+
+                <!-- Foto del equipo -->
+                <div class="about-photo" hosReveal>
+                    <img src="/images/properties/team.jpg"
+                         alt="Equipo Hospitality OS trabajando"
+                         class="about-photo__img"
+                         loading="lazy" />
+                    <div class="about-photo__caption">
+                        <i class="pi pi-building"></i>
+                        El equipo de Hospitality OS · Santo Domingo, República Dominicana
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -274,6 +286,33 @@ export class PricingPage {
                 margin-top: 18px;
                 color: var(--hos-text-muted);
                 font-size: 0.95rem;
+            }
+            /* foto equipo */
+            .about-photo {
+                margin-top: 3rem;
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: var(--hos-shadow-lg);
+                position: relative;
+            }
+            .about-photo__img {
+                width: 100%;
+                height: 420px;
+                object-fit: cover;
+                object-position: center;
+                display: block;
+            }
+            .about-photo__caption {
+                position: absolute;
+                bottom: 0; left: 0; right: 0;
+                padding: 16px 24px;
+                background: linear-gradient(to top, rgba(2,6,23,.7), transparent);
+                color: rgba(255,255,255,.85);
+                font-size: 0.8rem;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             @media (max-width: 820px) {
                 .gos-values {
