@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { Component, OnInit, inject } from '@angular/core';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { GosAuthCard } from '@/app/shared/components/auth-card';
 import { OnboardingStep1Data, OnboardingStep2Data } from '@/app/shared/services/onboarding.service';
+import { AuthService } from '@/app/core/services/auth.service';
+import { HotelService } from '@/app/core/services/hotel.service';
 
 // ─── Validators ──────────────────────────────────────────────────────────────
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
@@ -33,7 +35,7 @@ const REGISTER_MODULES = [
 @Component({
     selector: 'account-login',
     standalone: true,
-    imports: [RouterModule, GosAuthCard],
+    imports: [RouterModule, FormsModule, GosAuthCard],
     template: `
         <gos-auth-card
             icon="pi pi-lock"
@@ -44,16 +46,21 @@ const REGISTER_MODULES = [
             <form (ngSubmit)="submit()">
                 <div class="gos-field">
                     <label for="login-email">Email</label>
-                    <input id="login-email" type="email" class="gos-input" placeholder="tu@hotel.com" />
+                    <input id="login-email" type="email" name="email" class="gos-input" placeholder="tu@hotel.com" [(ngModel)]="email" />
                 </div>
                 <div class="gos-field">
                     <label for="login-pass">Contraseña</label>
-                    <input id="login-pass" type="password" class="gos-input" placeholder="••••••••" />
+                    <input id="login-pass" type="password" name="password" class="gos-input" placeholder="••••••••" [(ngModel)]="password" />
                     <div style="text-align: right; margin-top: 6px">
                         <a class="gos-link" routerLink="/account/forgot-password">¿Olvidaste tu contraseña?</a>
                     </div>
                 </div>
-                <button type="submit" class="gos-btn gos-btn--primary gos-btn--block">Iniciar sesión <i class="pi pi-arrow-right"></i></button>
+                @if (errorMessage) {
+                    <div class="gos-error"><i class="pi pi-exclamation-circle"></i> {{ errorMessage }}</div>
+                }
+                <button type="submit" class="gos-btn gos-btn--primary gos-btn--block" [disabled]="loading">
+                    @if (loading) { <span class="gos-spinner"></span> } Entrando <i class="pi pi-arrow-right"></i>
+                </button>
             </form>
             <div class="auth-sep">o continúa con</div>
             <div class="auth-grid-2">
@@ -67,8 +74,33 @@ const REGISTER_MODULES = [
     `
 })
 export class LoginPage {
+    email = '';
+    password = '';
+    errorMessage = '';
+    loading = false;
+
+    private readonly auth = inject(AuthService);
+    private readonly router = inject(Router);
+
     submit(): void {
-        alert('Demo: en el MVP real aquí se autentica contra el backend.');
+        if (!this.email || !this.password) {
+            this.errorMessage = 'Introduce tu email y contraseña.';
+            return;
+        }
+
+        this.loading = true;
+        this.errorMessage = '';
+        this.auth.login({ email: this.email, password: this.password, rememberMe: false }).subscribe({
+            next: () => this.router.navigate(['/app']),
+            error: (err: { error?: string | { message?: string } }) => {
+                this.loading = false;
+                if (typeof err.error === 'string' && err.error) {
+                    this.errorMessage = err.error;
+                } else {
+                    this.errorMessage = (err.error as { message?: string })?.message ?? 'Credenciales inválidas o usuario inactivo.';
+                }
+            }
+        });
     }
 }
 
@@ -205,7 +237,8 @@ export class LoginPage {
                        [class.reg-input--err]="inv(form1,'email')"
                        formControlName="email"
                        placeholder="juan.perez@hotel.com"
-                       autocomplete="email" />
+                       autocomplete="email"
+                       (blur)="onEmailBlur()" />
             </div>
             @if (inv(form1,'email')) {
                 <p class="reg-err">
@@ -213,6 +246,10 @@ export class LoginPage {
                     @if (form1.get('email')?.errors?.['required']) { El email es obligatorio }
                     @else { Introduce un email válido }
                 </p>
+            } @else if ((emailBlurred || s1) && emailTaken) {
+                <p class="reg-err"><i class="pi pi-exclamation-circle"></i> Ese email ya está registrado</p>
+            } @else if (emailChecking) {
+                <p class="reg-err reg-err--muted"><i class="pi pi-spin pi-spinner"></i> Verificando disponibilidad…</p>
             }
         </div>
 
@@ -443,12 +480,15 @@ export class LoginPage {
         </div>
 
         <!-- Acciones paso 2 -->
+        @if (errorMessage) {
+            <p class="reg-err"><i class="pi pi-exclamation-circle"></i> {{ errorMessage }}</p>
+        }
         <div class="reg-actions2">
-            <button type="button" class="reg-btn reg-btn--ghost" (click)="goBack()">
+            <button type="button" class="reg-btn reg-btn--ghost" (click)="goBack()" [disabled]="submitting">
                 <i class="pi pi-arrow-left"></i> Volver
             </button>
-            <button type="submit" class="reg-btn reg-btn--primary">
-                Finalizar configuración <i class="pi pi-arrow-right"></i>
+            <button type="submit" class="reg-btn reg-btn--primary" [disabled]="submitting">
+                @if (submitting) { <span class="gos-spinner"></span> } {{ submitting ? 'Creando cuenta…' : 'Finalizar configuración' }} <i class="pi pi-arrow-right"></i>
             </button>
         </div>
 
@@ -705,6 +745,7 @@ export class LoginPage {
             font-size: .78rem; color: #ef4444; margin: 0;
             display: flex; align-items: center; gap: .3rem;
         }
+        .reg-err--muted { color: var(--hos-text-muted); }
 
         /* ── Términos ───────────────────────────────────────── */
         .reg-terms {
@@ -944,12 +985,21 @@ export class RegisterPage implements OnInit {
     s1 = false;
     /** ¿Se intentó enviar el paso 2? */
     s2 = false;
+    errorMessage = '';
+    submitting = false;
+    emailBlurred  = false;
+    emailChecking = false;
+    emailTaken    = false;
 
     form1!: FormGroup;
     form2!: FormGroup;
 
     savedModules: string[] = [];
     private savedStep1!: OnboardingStep1Data;
+
+    private readonly auth = inject(AuthService);
+    private readonly hotels = inject(HotelService);
+    private readonly router = inject(Router);
 
     constructor(private fb: FormBuilder) {}
 
@@ -998,10 +1048,33 @@ export class RegisterPage implements OnInit {
         this.form2.get('modules')?.markAsTouched();
     }
 
+    // ── Disponibilidad de email (GET /auth/check-email/{email}) ────────────
+    onEmailBlur(): void {
+        const email = this.form1.get('email');
+        if (!email || email.invalid || !email.value) {
+            return;
+        }
+        this.emailBlurred = true;
+        this.emailChecking = true;
+        this.emailTaken = false;
+        this.auth.checkEmailAvailability(email.value).subscribe({
+            next: (available) => {
+                this.emailChecking = false;
+                this.emailTaken = !available;
+            },
+            error: () => {
+                this.emailChecking = false;
+            }
+        });
+    }
+
     // ── Paso 1 → Paso 2 ──────────────────────────────────────────────────────
     onStep1Submit(): void {
         this.s1 = true;
         this.form1.markAllAsTouched();
+        if (this.emailTaken) {
+            return;
+        }
         if (this.form1.invalid) return;
 
         const v = this.form1.value;
@@ -1025,7 +1098,6 @@ export class RegisterPage implements OnInit {
         if (this.form2.invalid) return;
 
         const v = this.form2.value;
-        /* eslint-disable @typescript-eslint/no-unused-vars */
         const step2Data: OnboardingStep2Data = {
             property: {
                 propertyName:    v.propertyName,
@@ -1038,27 +1110,58 @@ export class RegisterPage implements OnInit {
             },
         };
 
-        /*
-         * ─────────────────────────────────────────────────────────
-         * TODO — Integración backend (pendiente)
-         * ─────────────────────────────────────────────────────────
-         * Cuando el backend esté disponible, reemplazar este bloque:
-         *
-         *   this.authService.register(this.savedStep1, step2Data).subscribe({
-         *     next:  () => { this.savedModules = v.modules; this.completed = true; },
-         *     error: (err) => { ... manejar error ... }
-         *   });
-         *
-         * Datos listos para enviar:
-         *   - this.savedStep1  → UserCredentials + termsAccepted
-         *   - step2Data        → PropertyConfiguration (incluye category, aunque
-         *                        no esté en el modelo actual — se puede extender)
-         * ─────────────────────────────────────────────────────────
-         */
+        const u = this.savedStep1.user;
+        this.submitting = true;
+        this.errorMessage = '';
+        this.auth.register({
+            firstName: u.firstName,
+            lastName: u.lastName,
+            email: u.email,
+            phoneNumber: '',
+            password: u.password,
+            confirmPassword: u.password,
+            department: step2Data.property.role ?? '',
+            position: step2Data.property.propertyType ?? ''
+        }).subscribe({
+            next: () => this.createProperty(u, v),
+            error: (err: { error?: string | { message?: string } }) => {
+                this.submitting = false;
+                if (typeof err.error === 'string' && err.error) {
+                    this.errorMessage = err.error;
+                } else {
+                    this.errorMessage = (err.error as { message?: string })?.message ?? 'No se pudo crear la cuenta. Inténtalo de nuevo.';
+                }
+            }
+        });
+    }
 
-        this.savedModules = v.modules;
-        this.completed = true;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    /** Persiste la propiedad con POST /api/v1/hotels (el token ya está en localStorage) */
+    private createProperty(u: { firstName: string; lastName: string; email: string; password: string }, v: Record<string, unknown>): void {
+        const parsedRating = Number.parseInt(String(v['category']), 10);
+        this.hotels.createHotel({
+            name: String(v['propertyName']),
+            description: `Propiedad "${String(v['propertyType'])}" creada durante el registro.`,
+            address: '',
+            phoneNumber: '',
+            email: u.email,
+            starRating: Number.isFinite(parsedRating) ? parsedRating : 3,
+            totalRooms: Number(v['roomCount']) || 0,
+            timeZone: 'UTC',
+            city: String(v['city'] ?? ''),
+            country: String(v['country'] ?? '')
+        }).subscribe({
+            next: (hotel) => {
+                localStorage.setItem('auth_hotel_id', hotel.id);
+                this.savedModules = (v['modules'] as string[]) ?? [];
+                this.completed = true;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+            error: () => {
+                this.savedModules = (v['modules'] as string[]) ?? [];
+                this.completed = true;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
     }
 }
 
@@ -1068,7 +1171,7 @@ export class RegisterPage implements OnInit {
 @Component({
     selector: 'account-forgot',
     standalone: true,
-    imports: [RouterModule, GosAuthCard],
+    imports: [RouterModule, FormsModule, GosAuthCard],
     template: `
         <gos-auth-card
             icon="pi pi-key"
@@ -1076,13 +1179,22 @@ export class RegisterPage implements OnInit {
             title="¿Olvidaste tu contraseña?"
             subtitle="Te enviamos un enlace seguro para restablecerla."
         >
+            @if (!sent) {
             <form (ngSubmit)="submit()">
                 <div class="gos-field">
                     <label for="forgot-email">Email</label>
-                    <input id="forgot-email" type="email" class="gos-input" placeholder="tu@hotel.com" />
+                    <input id="forgot-email" type="email" name="email" class="gos-input" placeholder="tu@hotel.com" [(ngModel)]="email" />
                 </div>
-                <button type="submit" class="gos-btn gos-btn--primary gos-btn--block">Enviar enlace <i class="pi pi-send"></i></button>
+                @if (errorMessage) {
+                    <div class="gos-error"><i class="pi pi-exclamation-circle"></i> {{ errorMessage }}</div>
+                }
+                <button type="submit" class="gos-btn gos-btn--primary gos-btn--block" [disabled]="loading">
+                    @if (loading) { <span class="gos-spinner"></span> } Enviar enlace <i class="pi pi-send"></i>
+                </button>
             </form>
+            } @else {
+                <div class="gos-success"><i class="pi pi-check-circle"></i> Si el correo existe, recibirás un enlace para restablecer tu contraseña.</div>
+            }
             <p class="auth-foot">
                 <a class="gos-link" routerLink="/account/login"><i class="pi pi-arrow-left"></i> Volver a iniciar sesión</a>
             </p>
@@ -1090,8 +1202,31 @@ export class RegisterPage implements OnInit {
     `
 })
 export class ForgotPasswordPage {
+    email = '';
+    sent = false;
+    loading = false;
+    errorMessage = '';
+
+    private readonly auth = inject(AuthService);
+
     submit(): void {
-        alert('Demo: enviamos el correo con el enlace de restablecimiento.');
+        if (!this.email) {
+            this.errorMessage = 'Introduce tu email.';
+            return;
+        }
+
+        this.loading = true;
+        this.errorMessage = '';
+        this.auth.forgotPassword(this.email).subscribe({
+            next: () => {
+                this.loading = false;
+                this.sent = true;
+            },
+            error: () => {
+                this.loading = false;
+                this.errorMessage = 'No se pudo enviar el enlace. Inténtalo de nuevo.';
+            }
+        });
     }
 }
 
@@ -1101,7 +1236,7 @@ export class ForgotPasswordPage {
 @Component({
     selector: 'account-reset',
     standalone: true,
-    imports: [RouterModule, GosAuthCard],
+    imports: [RouterModule, FormsModule, GosAuthCard],
     template: `
         <gos-auth-card
             icon="pi pi-key"
@@ -1109,26 +1244,85 @@ export class ForgotPasswordPage {
             title="Restablece tu contraseña"
             subtitle="Elige una contraseña nueva y segura."
         >
+            @if (done) {
+                <div class="gos-success"><i class="pi pi-check-circle"></i> Contraseña restablecida correctamente.</div>
+                <a class="gos-btn gos-btn--primary gos-btn--block" routerLink="/account/login">Iniciar sesión <i class="pi pi-arrow-right"></i></a>
+            } @else {
             <form (ngSubmit)="submit()">
                 <div class="gos-field">
+                    <label for="reset-email">Email</label>
+                    <input id="reset-email" type="email" name="email" class="gos-input" placeholder="tu@hotel.com" [(ngModel)]="email" />
+                </div>
+                <div class="gos-field">
                     <label for="reset-pass">Nueva contraseña</label>
-                    <input id="reset-pass" type="password" class="gos-input" placeholder="Mínimo 8 caracteres" />
+                    <input id="reset-pass" type="password" name="password" class="gos-input" placeholder="Mínimo 8 caracteres" [(ngModel)]="password" />
                 </div>
                 <div class="gos-field">
                     <label for="reset-pass2">Confirma la contraseña</label>
-                    <input id="reset-pass2" type="password" class="gos-input" placeholder="Repite la contraseña" />
+                    <input id="reset-pass2" type="password" name="confirmPassword" class="gos-input" placeholder="Repite la contraseña" [(ngModel)]="confirmPassword" />
                 </div>
-                <button type="submit" class="gos-btn gos-btn--primary gos-btn--block">Guardar contraseña <i class="pi pi-check"></i></button>
+                @if (errorMessage) {
+                    <div class="gos-error"><i class="pi pi-exclamation-circle"></i> {{ errorMessage }}</div>
+                }
+                <button type="submit" class="gos-btn gos-btn--primary gos-btn--block" [disabled]="loading">
+                    @if (loading) { <span class="gos-spinner"></span> } Guardar contraseña <i class="pi pi-check"></i>
+                </button>
             </form>
+            }
             <p class="auth-foot">
                 <a class="gos-link" routerLink="/account/login"><i class="pi pi-arrow-left"></i> Volver a iniciar sesión</a>
             </p>
         </gos-auth-card>
     `
 })
-export class ResetPasswordPage {
+export class ResetPasswordPage implements OnInit {
+    email = '';
+    password = '';
+    confirmPassword = '';
+    done = false;
+    loading = false;
+    errorMessage = '';
+
+    private token = '';
+
+    private readonly route = inject(ActivatedRoute);
+    private readonly auth = inject(AuthService);
+
+    ngOnInit(): void {
+        this.route.queryParams.subscribe((params) => {
+            this.token = params['token'] ?? '';
+            if (params['email']) {
+                this.email = params['email'];
+            }
+        });
+    }
+
     submit(): void {
-        alert('Demo: contraseña restablecida, ya puedes iniciar sesión.');
+        if (!this.token) {
+            this.errorMessage = 'El enlace es inválido o ha expirado. Solicita uno nuevo.';
+            return;
+        }
+        if (this.password !== this.confirmPassword) {
+            this.errorMessage = 'Las contraseñas no coinciden.';
+            return;
+        }
+
+        this.loading = true;
+        this.errorMessage = '';
+        this.auth.resetPassword(this.email, this.token, this.password, this.confirmPassword).subscribe({
+            next: () => {
+                this.loading = false;
+                this.done = true;
+            },
+            error: (err: { error?: string | { message?: string } }) => {
+                this.loading = false;
+                if (typeof err.error === 'string' && err.error) {
+                    this.errorMessage = err.error;
+                } else {
+                    this.errorMessage = (err.error as { message?: string })?.message ?? 'No se pudo restablecer la contraseña. Inténtalo de nuevo.';
+                }
+            }
+        });
     }
 }
 

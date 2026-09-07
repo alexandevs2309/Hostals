@@ -4,18 +4,21 @@ import { Dashboard } from './app/pages/dashboard/dashboard';
 import { Documentation } from './app/pages/documentation/documentation';
 import { Notfound } from './app/pages/notfound/notfound';
 import { ComingSoonPage } from './app/pages/coming-soon/coming-soon';
+import { RoomsPage } from './app/pages/rooms/rooms';
 import { MARKETING_ROUTES } from './app/features/marketing/marketing.routes';
+import { authGuard } from './app/core/guards/auth.guard';
 
 export const appRoutes: Routes = [
     ...MARKETING_ROUTES,
     {
         path: 'app',
         component: AppLayout,
+        canActivate: [authGuard],
         children: [
             { path: '', component: Dashboard },
             // ── Módulos PMS (en desarrollo) ──────────────────────────
             { path: 'reservations', component: ComingSoonPage, data: { module: 'reservations' } },
-            { path: 'rooms',        component: ComingSoonPage, data: { module: 'rooms'        } },
+            { path: 'rooms',        component: RoomsPage },
             { path: 'guests',       component: ComingSoonPage, data: { module: 'guests'       } },
             { path: 'housekeeping', component: ComingSoonPage, data: { module: 'housekeeping' } },
             { path: 'maintenance',  component: ComingSoonPage, data: { module: 'maintenance'  } },

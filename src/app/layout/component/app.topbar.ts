@@ -1,7 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { map } from 'rxjs';
 import { LayoutService } from '@/app/layout/service/layout.service';
+import { AuthService } from '@/app/core/services/auth.service';
+import { HotelService } from '@/app/core/services/hotel.service';
 
 @Component({
     selector: 'app-topbar',
@@ -42,10 +45,10 @@ import { LayoutService } from '@/app/layout/service/layout.service';
             </button>
 
             <div class="hos-topbar__user">
-                <div class="hos-topbar__avatar">GM</div>
+                <div class="hos-topbar__avatar">{{ initials }}</div>
                 <div class="hos-topbar__user-info">
-                    <span class="hos-topbar__user-name">Demo User</span>
-                    <span class="hos-topbar__user-prop">Hotel Aurora</span>
+                    <span class="hos-topbar__user-name">{{ userName }}</span>
+                    <span class="hos-topbar__user-prop">{{ propertyName }}</span>
                 </div>
                 <i class="pi pi-chevron-down hos-topbar__chevron"></i>
             </div>
@@ -110,8 +113,33 @@ import { LayoutService } from '@/app/layout/service/layout.service';
         }
     `]
 })
-export class AppTopbar {
+export class AppTopbar implements OnInit {
     layoutService = inject(LayoutService);
+
+    userName = '';
+    initials = '';
+    propertyName = '';
+
+    private readonly auth = inject(AuthService);
+    private readonly hotels = inject(HotelService);
+
+    ngOnInit(): void {
+        this.auth.currentUser$.subscribe((user) => {
+            this.userName = user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : '';
+            this.initials = user?.firstName?.charAt(0) ?? 'U';
+        });
+
+        const myHotelId = localStorage.getItem('auth_hotel_id');
+        const hotels$ = myHotelId
+            ? this.hotels.getHotelById(myHotelId)
+            : this.hotels.getHotels({ pageNumber: 1, pageSize: 1 }).pipe(map((page) => page.items[0] ?? null));
+
+        hotels$.subscribe({
+            next: (hotel) => {
+                this.propertyName = hotel?.name ?? '';
+            }
+        });
+    }
 
     toggleDarkMode(): void {
         this.layoutService.layoutConfig.update(s => ({ ...s, darkTheme: !s.darkTheme }));

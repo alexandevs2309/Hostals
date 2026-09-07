@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {
     HOTEL_METRICS,
     BOOKINGS,
@@ -9,6 +11,14 @@ import {
     OCCUPANCY_TREND,
     REVENUE_TREND
 } from '@/app/shared/data/mock.data';
+import { DashboardService, MetricsDto } from '@/app/core/services/dashboard.service';
+import {
+    HotelMetrics,
+    BookingRow,
+    HousekeepingRoom,
+    MaintenanceTicket,
+    ChartPoint
+} from '@/app/shared/models/hotel.model';
 
 /*
  * TODO (Backend Integration) — Dashboard en tiempo real
@@ -643,30 +653,139 @@ import {
         }
     `]
 })
-export class Dashboard {
-    readonly metrics        = HOTEL_METRICS;
-    readonly bookings       = BOOKINGS;
-    readonly housekeeping   = HOUSEKEEPING_ROOMS;
-    readonly tickets        = MAINTENANCE_TICKETS;
-    readonly occupancy      = OCCUPANCY_TREND;
-    readonly revenue        = REVENUE_TREND;
+export class Dashboard implements OnInit {
+    metrics: HotelMetrics = { ...HOTEL_METRICS };
+    bookings: BookingRow[] = [...BOOKINGS];
+    housekeeping: HousekeepingRoom[] = [...HOUSEKEEPING_ROOMS];
+    tickets: MaintenanceTicket[] = [...MAINTENANCE_TICKETS];
+    occupancy: ChartPoint[] = [...OCCUPANCY_TREND];
+    revenue: ChartPoint[] = [...REVENUE_TREND];
+
+    private dashboard = inject(DashboardService);
 
     readonly today = new Date().toLocaleDateString('es-ES', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
 
+    hkCounts = {
+        clean:       this.housekeeping.filter(r => r.status === 'limpia').length,
+        pending:     this.housekeeping.filter(r => r.status === 'pendiente').length,
+        inspection:  this.housekeeping.filter(r => r.status === 'inspeccion').length,
+        maintenance: this.housekeeping.filter(r => r.status === 'mantenimiento').length,
+    };
+
+    ngOnInit(): void {
+        this.loadDashboard();
+    }
+
+    private loadDashboard(): void {
+        forkJoin({
+            metrics: this.dashboard.getMetrics().pipe(catchError(() => of(null))),
+            kpis: this.dashboard.getKpis().pipe(catchError(() => of(null))),
+            bookings: this.dashboard.getTodayBookings(8).pipe(catchError(() => of(null))),
+            housekeeping: this.dashboard.getHousekeepingStatus().pipe(catchError(() => of(null))),
+            tickets: this.dashboard.getMaintenanceTickets(6).pipe(catchError(() => of(null))),
+            occupancy: this.dashboard.getOccupancyTrend('week').pipe(catchError(() => of(null))),
+            revenue: this.dashboard.getRevenueTrend('year').pipe(catchError(() => of(null)))
+        }).subscribe((result) => {
+            if (result.metrics && result.kpis) {
+                this.applyMetrics(result.metrics, result.kpis);
+            }
+            if (result.bookings) {
+                this.bookings = result.bookings.map((b) => ({
+                    ...b,
+                    status: this.bookingStatus(b.status)
+                }));
+            }
+            if (result.housekeeping) {
+                this.housekeeping = result.housekeeping.rooms.map((r) => ({
+                    room: r.room,
+                    status: this.housekeepingStatus(r.status),
+                    housekeeper: r.housekeeper,
+                    priority: this.housekeepingPriority(r.priority)
+                }));
+                this.hkCounts = {
+                    clean:       result.housekeeping.clean,
+                    pending:     result.housekeeping.pending,
+                    inspection:  result.housekeeping.inspection,
+                    maintenance: result.housekeeping.maintenance
+                };
+            }
+            if (result.tickets) {
+                this.tickets = result.tickets.map((t) => ({
+                    room: t.room,
+                    issue: t.issue,
+                    priority: this.priorityLabel(t.priority),
+                    assignee: t.assignee,
+                    sla: t.sla,
+                    status: 'abierto'
+                }));
+            }
+            if (result.occupancy) {
+                this.occupancy = result.occupancy;
+            }
+            if (result.revenue) {
+                this.revenue = result.revenue;
+            }
+        });
+    }
+
+    private applyMetrics(m: MetricsDto, k: Record<string, number>): void {
+        this.metrics.occupancy = Math.round(m.occupancyRate ?? 0);
+        this.metrics.revenue = Math.round(m.todayRevenue ?? 0);
+        this.metrics.checkIns = Math.round(m.checkInsToday ?? 0);
+        this.metrics.availableRooms = Math.round(m.availableRooms ?? 0);
+        this.metrics.rooms = Math.round(m.totalRooms ?? 0);
+        this.metrics.adr = k['averageDailyRate'] ?? 0;
+        this.metrics.revpar = k['revenuePerAvailableRoom'] ?? 0;
+    }
+
+    private bookingStatus(status: string): BookingRow['status'] {
+        const map: Record<string, BookingRow['status']> = {
+            'Pending': 'pendiente',
+            'Confirmed': 'confirmada',
+            'CheckedIn': 'check-in',
+            'CheckedOut': 'check-out',
+            'Cancelled': 'pendiente',
+            'NoShow': 'pendiente'
+        };
+        return map[status] ?? 'pendiente';
+    }
+
+    private housekeepingStatus(status: string): HousekeepingRoom['status'] {
+        const map: Record<string, HousekeepingRoom['status']> = {
+            'Dirty': 'pendiente',
+            'InProgress': 'pendiente',
+            'Inspection': 'inspeccion',
+            'Clean': 'limpia',
+            'OutOfService': 'mantenimiento'
+        };
+        return map[status] ?? 'pendiente';
+    }
+
+    private housekeepingPriority(priority: string): HousekeepingRoom['priority'] {
+        const map: Record<string, HousekeepingRoom['priority']> = {
+            'Critical': 'alta',
+            'High': 'alta',
+            'Medium': 'media',
+            'Low': 'baja'
+        };
+        return map[priority] ?? 'baja';
+    }
+
+    private priorityLabel(priority: string): MaintenanceTicket['priority'] {
+        const map: Record<string, MaintenanceTicket['priority']> = {
+            'Critical': 'critica',
+            'High': 'alta',
+            'Medium': 'media',
+            'Low': 'baja'
+        };
+        return map[priority] ?? 'baja';
+    }
+
     get avgOccupancy(): number {
         const vals = this.occupancy.map(p => p.value);
         return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-    }
-
-    get hkCounts() {
-        return {
-            clean:       this.housekeeping.filter(r => r.status === 'limpia').length,
-            pending:     this.housekeeping.filter(r => r.status === 'pendiente').length,
-            inspection:  this.housekeeping.filter(r => r.status === 'inspeccion').length,
-            maintenance: this.housekeeping.filter(r => r.status === 'mantenimiento').length,
-        };
     }
 
     statusClass(status: string): string {

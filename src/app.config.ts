@@ -4,7 +4,7 @@ import { provideRouter, withComponentInputBinding, withEnabledBlockingInitialNav
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { appRoutes } from './app.routes';
-import { mockApiInterceptor } from './app/shared/services/api/mock-api.interceptor';
+import { authInterceptor } from './app/core/interceptors/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -15,7 +15,7 @@ export const appConfig: ApplicationConfig = {
             withViewTransitions(),
             withEnabledBlockingInitialNavigation()
         ),
-        provideHttpClient(withFetch(), withInterceptors([mockApiInterceptor])),
+        provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
         provideZonelessChangeDetection(),
         providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark', primary: 'teal' } } })
     ]

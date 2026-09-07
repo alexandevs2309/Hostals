@@ -1,7 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, RouterLinkActive } from '@angular/router';
+import { RouterModule, RouterLinkActive, Router } from '@angular/router';
+import { map } from 'rxjs';
 import { LayoutService } from '@/app/layout/service/layout.service';
+import { AuthService, User } from '@/app/core/services/auth.service';
+import { HotelService, Hotel } from '@/app/core/services/hotel.service';
 
 interface HosNavItem {
     label: string;
@@ -16,7 +19,7 @@ const HOTEL_NAV: HosNavItem[] = [
     { label: 'Dashboard',      icon: 'pi pi-th-large',    route: '/app'                },
     { separator: true,         label: 'Operación',        icon: '' },
     { label: 'Reservaciones',  icon: 'pi pi-calendar',    route: '/app/reservations',  soon: true },
-    { label: 'Habitaciones',   icon: 'pi pi-building',    route: '/app/rooms',         soon: true },
+    { label: 'Habitaciones',   icon: 'pi pi-building',    route: '/app/rooms'         },
     { label: 'Huéspedes',      icon: 'pi pi-user',        route: '/app/guests',        soon: true },
     { label: 'Housekeeping',   icon: 'pi pi-sparkles',    route: '/app/housekeeping',  soon: true },
     { label: 'Mantenimiento',  icon: 'pi pi-wrench',      route: '/app/maintenance',   soon: true },
@@ -47,12 +50,9 @@ const HOTEL_NAV: HosNavItem[] = [
             <div class="hos-nav__property">
                 <div class="hos-nav__property-dot"></div>
                 <div class="hos-nav__property-info">
-                    <span class="hos-nav__property-name">Hotel Aurora</span>
-                    <span class="hos-nav__property-sub">Demo · 142 habitaciones</span>
+                    <span class="hos-nav__property-name">{{ propertyName }}</span>
+                    <span class="hos-nav__property-sub">{{ propertySub }}</span>
                 </div>
-                <button type="button" class="hos-nav__property-btn" title="Cambiar propiedad">
-                    <i class="pi pi-chevron-down"></i>
-                </button>
             </div>
 
             <!-- items de navegación -->
@@ -85,12 +85,15 @@ const HOTEL_NAV: HosNavItem[] = [
             <!-- footer del sidebar -->
             <div class="hos-nav__foot">
                 <div class="hos-nav__user">
-                    <div class="hos-nav__avatar">GM</div>
+                    <div class="hos-nav__avatar">{{ user?.firstName?.charAt(0) ?? 'U' }}{{ user?.lastName?.charAt(0) ?? '' }}</div>
                     <div class="hos-nav__user-info">
-                        <span class="hos-nav__user-name">Demo User</span>
-                        <span class="hos-nav__user-role">Gerente General</span>
+                        <span class="hos-nav__user-name">{{ userName }}</span>
+                        <span class="hos-nav__user-role">{{ userRole }}</span>
                     </div>
                 </div>
+                <button type="button" class="hos-nav__logout" (click)="signOut()">
+                    <i class="pi pi-sign-out"></i> Cerrar sesión
+                </button>
             </div>
 
         </nav>
@@ -290,9 +293,65 @@ const HOTEL_NAV: HosNavItem[] = [
         .hos-nav__user-role {
             font-size: 0.7rem; color: var(--text-color-secondary);
         }
+        .hos-nav__logout {
+            display: flex; align-items: center; gap: 6px;
+            margin-top: 10px; width: 100%; padding: 7px 10px;
+            border: 1px solid var(--surface-border); border-radius: 8px;
+            background: transparent; color: var(--text-color-secondary);
+            font-family: var(--font-family); font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+        }
+        .hos-nav__logout:hover {
+            color: #ef4444; border-color: color-mix(in srgb, #ef4444 45%, transparent);
+            background: color-mix(in srgb, #ef4444 8%, transparent);
+        }
     `]
 })
-export class AppMenu {
+export class AppMenu implements OnInit {
     nav = HOTEL_NAV;
     layoutService = inject(LayoutService);
+
+    user: User | null = null;
+    userName = '';
+    userRole = '';
+    propertyName = 'Sin propiedad';
+    propertySub = '';
+
+    private readonly auth = inject(AuthService);
+    private readonly hotels = inject(HotelService);
+    private readonly router = inject(Router);
+
+    ngOnInit(): void {
+        this.auth.currentUser$.subscribe((user) => {
+            this.user = user;
+            this.userName = user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : 'Usuario';
+            this.userRole = user?.position || user?.roles?.[0] || 'Miembro del equipo';
+        });
+
+        // Propiedad del usuario (auth_hotel_id) o primera activa (GET /api/v1/hotels)
+        const myHotelId = localStorage.getItem('auth_hotel_id');
+        const hotels$ = myHotelId
+            ? this.hotels.getHotelById(myHotelId)
+            : this.hotels.getHotels({ pageNumber: 1, pageSize: 1 }).pipe(map((page) => page.items[0] ?? null));
+
+        hotels$.subscribe({
+            next: (hotel: Hotel | null) => {
+                if (hotel) {
+                    this.propertyName = hotel.name;
+                    const location = [hotel.city, hotel.country].filter(Boolean).join(', ');
+                    this.propertySub = `${hotel.totalRooms || 0} habitaciones${location ? ` · ${location}` : ''}`;
+                } else {
+                    this.propertySub = 'Sin propiedad configurada';
+                }
+            },
+            error: () => {
+                this.propertySub = 'Pendiente de cargar';
+            }
+        });
+    }
+
+    signOut(): void {
+        this.auth.logout();
+        this.router.navigate(['/account/login']);
+    }
 }
