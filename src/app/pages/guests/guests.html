@@ -1,0 +1,278 @@
+<div class="gs-page">
+
+    <!-- ── Cabecera ─────────────────────────────────────── -->
+    <div class="gs-head">
+        <div>
+            <h1 class="gs-head__title">Huéspedes</h1>
+            <p class="gs-head__sub">{{ hotelName() }}</p>
+        </div>
+        <div class="gs-head__actions">
+            @if (msg()) {
+                <span class="gs-toast" [class.gs-toast--err]="msgError()">
+                    <i class="pi" [class.pi-check-circle]="!msgError()" [class.pi-exclamation-circle]="msgError()"></i>
+                    {{ msg() }}
+                </span>
+            }
+            <button class="gs-btn gs-btn--primary" (click)="openCreate()">
+                <i class="pi pi-user-plus"></i> Nuevo huésped
+            </button>
+        </div>
+    </div>
+
+    @if (loading()) {
+        <div class="gs-panel gs-skel">
+            <div class="gs-row gs-row--skel"></div>
+            <div class="gs-row gs-row--skel"></div>
+            <div class="gs-row gs-row--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="gs-panel gs-empty">
+            <div class="gs-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+            <h3>{{ error() }}</h3>
+            <button class="gs-btn gs-btn--ghost" (click)="retry()"><i class="pi pi-refresh"></i> Reintentar</button>
+        </div>
+    } @else {
+
+        <!-- KPIs -->
+        <div class="gs-kpis">
+            <div class="gs-kpi">
+                <span class="gs-kpi__label">Total</span>
+                <span class="gs-kpi__value">{{ stats().total }}</span>
+            </div>
+            <div class="gs-kpi gs-kpi--vip">
+                <span class="gs-kpi__label">VIP</span>
+                <span class="gs-kpi__value">{{ stats().vip }}</span>
+            </div>
+            <div class="gs-kpi gs-kpi--ok">
+                <span class="gs-kpi__label">En casa</span>
+                <span class="gs-kpi__value">{{ stats().inHouse }}</span>
+            </div>
+            <div class="gs-kpi">
+                <span class="gs-kpi__label">Con estancias</span>
+                <span class="gs-kpi__value">{{ stats().withStays }}</span>
+            </div>
+            <div class="gs-kpi gs-kpi--new">
+                <span class="gs-kpi__label">Nuevos (30d)</span>
+                <span class="gs-kpi__value">{{ stats().recent }}</span>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="gs-toolbar">
+            <div class="gs-pills">
+                @for (t of tierOptions; track t) {
+                    <button class="gs-pill" [class.gs-pill--on]="filterTier() === t" (click)="setTier(t)">{{ t }}</button>
+                }
+            </div>
+            <div class="gs-search">
+                <i class="pi pi-search"></i>
+                <input [(ngModel)]="search" placeholder="Buscar nombre, email, teléfono, documento…" />
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        @if (!filtered().length) {
+            <div class="gs-panel gs-empty">
+                <div class="gs-empty__icon"><i class="pi pi-users"></i></div>
+                <h3>Sin huéspedes que coincidan</h3>
+                @if (!guests().length) {
+                    <p>Los huéspedes se registran automáticamente al crear reservas.</p>
+                }
+            </div>
+        } @else {
+            <div class="gs-panel gs-table">
+                <div class="gs-table__head">
+                    <div class="gs-c gs-c--guest">Huésped</div>
+                    <div class="gs-c gs-c--doc">Documento</div>
+                    <div class="gs-c gs-c--contact">Procedencia</div>
+                    <div class="gs-c gs-c--num">Estancias</div>
+                    <div class="gs-c gs-c--num">Gasto</div>
+                    <div class="gs-c gs-c--date">Última estancia</div>
+                    <div class="gs-c gs-c--tier">Nivel</div>
+                    <div class="gs-c gs-c--acts">Acciones</div>
+                </div>
+                @for (g of filtered(); track g.id) {
+                    <div class="gs-table__row">
+                        <div class="gs-c gs-c--guest">
+                            <div class="gs-avatar">{{ initials(g) }}</div>
+                            <div>
+                                <span class="gs-name">
+                                    {{ g.fullName }}
+                                    @if (g.isVIP) { <i class="pi pi-star-fill gs-vip" title="VIP"></i> }
+                                </span>
+                                <span class="gs-hint">{{ g.email || g.phoneNumber || 'Sin contacto' }}</span>
+                            </div>
+                        </div>
+                        <div class="gs-c gs-c--doc">
+                            <span class="gs-doc">{{ g.documentNumber || '—' }}</span>
+                            <span class="gs-hint">{{ g.documentType }}</span>
+                        </div>
+                        <div class="gs-c gs-c--contact">
+                            <span>{{ g.nationality || g.country || '—' }}</span>
+                            <span class="gs-hint">{{ loc(g) }}</span>
+                        </div>
+                        <div class="gs-c gs-c--num">{{ g.totalStays }}</div>
+                        <div class="gs-c gs-c--num gs-price">{{ fmtMoney(g.totalSpent) }}</div>
+                        <div class="gs-c gs-c--date">{{ fmtDate(g.lastStayDate) }}</div>
+                        <div class="gs-c gs-c--tier">
+                            <span class="gs-badge gs-badge--{{ (g.loyaltyTier || 'standard').toLowerCase() }}">{{ g.loyaltyTier }}</span>
+                            @if (g.activeReservations > 0) {
+                                <span class="gs-hint">{{ g.activeReservations }} activa{{ g.activeReservations > 1 ? 's' : '' }}</span>
+                            }
+                        </div>
+                        <div class="gs-c gs-c--acts">
+                            <button class="gs-act gs-act--ghost" title="Ficha del huésped" (click)="view(g)"><i class="pi pi-eye"></i> Ver</button>
+                            <button class="gs-act gs-act--edit" title="Editar datos" (click)="openEdit(g)"><i class="pi pi-pencil"></i> Editar</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (guests().length && pageInfo() > 1) {
+            <div class="gs-pager">
+                <button class="gs-btn gs-btn--ghost" [disabled]="page() <= 1" (click)="goPage(-1)"><i class="pi pi-chevron-left"></i> Anterior</button>
+                <span class="gs-pager__info">Página {{ page() }} de {{ pageInfo() }} · {{ totalCount() }} huéspedes</span>
+                <button class="gs-btn gs-btn--ghost" [disabled]="page() >= pageInfo()" (click)="goPage(1)">Siguiente <i class="pi pi-chevron-right"></i></button>
+            </div>
+        }
+    }
+
+    <!-- ── Modal crear/editar ────────────────────────────── -->
+    @if (showModal()) {
+        <div class="gs-overlay" (click)="showModal.set(false)">
+            <div class="gs-modal gs-modal--wide" (click)="$event.stopPropagation()">
+                <div class="gs-modal__head">
+                    <h3>{{ modalMode() === 'edit' ? 'Editar huésped' : 'Nuevo huésped' }}</h3>
+                    <button class="gs-modal__x" (click)="showModal.set(false)"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="gs-modal__body">
+                    <div class="gs-form-grid">
+                        <div class="gs-section">
+                            <span class="gs-section__title">Datos personales</span>
+                            <label class="gs-field">
+                                <span>Nombre *</span>
+                                <input [(ngModel)]="form.firstName" placeholder="Nombre" />
+                            </label>
+                            <label class="gs-field">
+                                <span>Apellidos</span>
+                                <input [(ngModel)]="form.lastName" placeholder="Apellidos" />
+                            </label>
+                            <div class="gs-field gs-field--split">
+                                <label class="gs-field">
+                                    <span>Tipo doc.</span>
+                                    <select [(ngModel)]="form.documentType">
+                                        <option>DNI</option>
+                                        <option>Pasaporte</option>
+                                        <option>NIE</option>
+                                        <option>Otro</option>
+                                    </select>
+                                </label>
+                                <label class="gs-field">
+                                    <span>Nº documento</span>
+                                    <input [(ngModel)]="form.documentNumber" placeholder="00000000A" />
+                                </label>
+                            </div>
+                            <label class="gs-field">
+                                <span>Nacionalidad</span>
+                                <input [(ngModel)]="form.nationality" placeholder="Española" />
+                            </label>
+                        </div>
+
+                        <div class="gs-section">
+                            <span class="gs-section__title">Contacto</span>
+                            <label class="gs-field">
+                                <span>Email</span>
+                                <input [(ngModel)]="form.email" placeholder="correo@ejemplo.com" />
+                            </label>
+                            <label class="gs-field">
+                                <span>Teléfono</span>
+                                <input [(ngModel)]="form.phoneNumber" placeholder="+34…" />
+                            </label>
+                            <div class="gs-field gs-field--split">
+                                <label class="gs-field">
+                                    <span>Ciudad</span>
+                                    <input [(ngModel)]="form.city" placeholder="Ciudad" />
+                                </label>
+                                <label class="gs-field">
+                                    <span>País</span>
+                                    <input [(ngModel)]="form.country" placeholder="País" />
+                                </label>
+                            </div>
+                            <label class="gs-field">
+                                <span>Preferencias</span>
+                                <input [(ngModel)]="form.preferences" placeholder="Almohada firme, piso bajo…" />
+                            </label>
+                        </div>
+
+                        <div class="gs-section gs-section--full">
+                            <span class="gs-section__title">Notas</span>
+                            <label class="gs-field gs-field--full">
+                                <span>Peticiones especiales</span>
+                                <textarea [(ngModel)]="form.specialRequests" rows="2" placeholder="Habitación tranquila, cuna…"></textarea>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="gs-modal__foot">
+                    <button class="gs-btn gs-btn--ghost" (click)="showModal.set(false)">Cancelar</button>
+                    <button class="gs-btn gs-btn--primary" [disabled]="!canSave()" (click)="submit()">
+                        {{ modalMode() === 'edit' ? 'Guardar cambios' : 'Crear huésped' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── Ficha del huésped ─────────────────────────────── -->
+    @if (showDetail()) {
+        <div class="gs-overlay" (click)="showDetail.set(false)">
+            <div class="gs-modal gs-modal--wide" (click)="$event.stopPropagation()">
+                <div class="gs-modal__head">
+                    <h3>Ficha · {{ detail()?.fullName }}</h3>
+                    <button class="gs-modal__x" (click)="showDetail.set(false)"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="gs-modal__body">
+                    <div class="gs-detail-head">
+                        <div class="gs-avatar gs-avatar--lg">{{ initials(detail()!) }}</div>
+                        <div class="gs-detail-id">
+                            <span class="gs-name">{{ detail()?.fullName }} @if (detail()?.isVIP) { <i class="pi pi-star-fill gs-vip" title="VIP"></i> }</span>
+                            <span class="gs-hint">{{ detail()?.email }}</span>
+                            <span class="gs-hint">{{ detail()?.phoneNumber }} · {{ detail()?.documentType }} {{ detail()?.documentNumber }}</span>
+                        </div>
+                        <div class="gs-detail-stats">
+                            <div class="gs-dstat"><span class="gs-dstat__value">{{ detail()?.totalStays }}</span><span class="gs-dstat__label">Estancias</span></div>
+                            <div class="gs-dstat"><span class="gs-dstat__value">{{ fmtMoney(detail()?.totalSpent ?? 0) }}</span><span class="gs-dstat__label">Gasto</span></div>
+                            <div class="gs-dstat"><span class="gs-dstat__value">{{ detail()?.loyaltyTier }}</span><span class="gs-dstat__label">Nivel</span></div>
+                        </div>
+                    </div>
+
+                    <div class="gs-detail-section">
+                        <span class="gs-section__title">Historial de reservas</span>
+                        @if (detailLoading()) {
+                            <div class="gs-skel-small"></div>
+                        } @else if (!detailReservations().length) {
+                            <p class="gs-muted">Sin reservas registradas en este hotel.</p>
+                        } @else {
+                            <div class="gs-hist">
+                                @for (r of detailReservations(); track r.id) {
+                                    <div class="gs-hist__row">
+                                        <span class="gs-hist__ref">{{ r.reservationNumber }}</span>
+                                        <span class="gs-hist__room">#{{ r.roomNumber }} · {{ r.roomTypeName }}</span>
+                                        <span class="gs-hist__date">{{ fmtDate(r.checkInDate) }} → {{ fmtDate(r.checkOutDate) }} ({{ r.numberOfNights }} noche{{ r.numberOfNights === 1 ? '' : 's' }})</span>
+                                        <span class="gs-badge gs-badge--{{ r.status.toLowerCase() }}">{{ statusLabel(r.status) }}</span>
+                                        <span class="gs-hist__amt">{{ fmtMoney(r.totalAmount) }}</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="gs-modal__foot">
+                    <button class="gs-btn gs-btn--ghost" (click)="showDetail.set(false)">Cerrar</button>
+                    <button class="gs-btn gs-btn--primary" (click)="openEdit(detail()!); showDetail.set(false)">Editar datos</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>

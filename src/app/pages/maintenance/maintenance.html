@@ -1,0 +1,91 @@
+<div class="mt-page">
+
+    <div class="mt-head">
+        <div>
+            <h1 class="mt-head__title">Mantenimiento</h1>
+            <p class="mt-head__sub">{{ hotelName() }}</p>
+        </div>
+        @if (msg()) {
+            <span class="mt-toast" [class.mt-toast--err]="msgError()">
+                <i class="pi" [class.pi-check-circle]="!msgError()" [class.pi-exclamation-circle]="msgError()"></i>
+                {{ msg() }}
+            </span>
+        }
+    </div>
+
+    @if (loading()) {
+        <div class="mt-panel mt-skel">
+            <div class="mt-row mt-row--skel"></div>
+            <div class="mt-row mt-row--skel"></div>
+            <div class="mt-row mt-row--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="mt-panel mt-empty">
+            <div class="mt-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+            <h3>{{ error() }}</h3>
+            <button class="mt-btn" (click)="retry()"><i class="pi pi-refresh"></i> Reintentar</button>
+        </div>
+    } @else {
+
+        <!-- KPIs -->
+        <div class="mt-kpis">
+            <button class="mt-kpi mt-kpi--pick" [class.mt-kpi--on]="filter() === 'open'" (click)="setFilter('open')">
+                <span class="mt-kpi__label">Abiertos</span>
+                <span class="mt-kpi__value">{{ counts().open }}</span>
+            </button>
+            <button class="mt-kpi mt-kpi--pick" [class.mt-kpi--on]="filter() === 'inprogress'" (click)="setFilter('inprogress')">
+                <span class="mt-kpi__label">En progreso</span>
+                <span class="mt-kpi__value">{{ counts().inprogress }}</span>
+            </button>
+            <button class="mt-kpi mt-kpi--pick" [class.mt-kpi--on]="filter() === 'resolved'" (click)="setFilter('resolved')">
+                <span class="mt-kpi__label">Resueltos</span>
+                <span class="mt-kpi__value">{{ counts().resolved }}</span>
+            </button>
+            <button class="mt-kpi mt-kpi--pick" [class.mt-kpi--on]="filter() === 'closed'" (click)="setFilter('closed')">
+                <span class="mt-kpi__label">Cerrados</span>
+                <span class="mt-kpi__value">{{ counts().closed }}</span>
+            </button>
+        </div>
+
+        <!-- Lista -->
+        @if (!filtered().length) {
+            <div class="mt-panel mt-empty">
+                <div class="mt-empty__icon"><i class="pi pi-wrench"></i></div>
+                <h3>Sin {{ statusLabel(filter()).toLowerCase() }}</h3>
+                <p>Los tickets se crean al solicitar mantenimiento desde Habitaciones.</p>
+            </div>
+        } @else {
+            <div class="mt-panel mt-table">
+                <div class="mt-table__head">
+                    <div class="mt-c mt-c--room">Habitación</div>
+                    <div class="mt-c mt-c--issue">Problema</div>
+                    <div class="mt-c mt-c--num">Prioridad</div>
+                    <div class="mt-c mt-c--num">SLA</div>
+                    <div class="mt-c mt-c--status">Estado</div>
+                    <div class="mt-c mt-c--acts">Acciones</div>
+                </div>
+                @for (t of filtered(); track t.ticketId ?? (t.room + t.issue)) {
+                    <div class="mt-table__row">
+                        <div class="mt-c mt-c--room"><span class="mt-roomnum">{{ t.room }}</span></div>
+                        <div class="mt-c mt-c--issue">
+                            <span class="mt-issue">{{ t.issue }}</span>
+                            @if (t.assignee) { <span class="mt-hint">{{ t.assignee }}</span> }
+                        </div>
+                        <div class="mt-c mt-c--num">
+                            <span class="mt-pri mt-pri--{{ (t.priority || '').toLowerCase() }}">{{ priorityLabel(t.priority) }}</span>
+                        </div>
+                        <div class="mt-c mt-c--num"><span class="mt-sla">{{ t.sla || '—' }}</span></div>
+                        <div class="mt-c mt-c--status"><span class="mt-badge">{{ statusLabel(t.status) }}</span></div>
+                        <div class="mt-c mt-c--acts">
+                            @if (t.status.toLowerCase() === 'open' || t.status.toLowerCase() === 'inprogress' || t.status.toLowerCase() === 'onhold') {
+                                <button class="mt-act mt-act--ok" [disabled]="busy()" (click)="complete(t)">
+                                    <i class="pi pi-check"></i> Completar
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>

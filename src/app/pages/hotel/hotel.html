@@ -1,0 +1,195 @@
+<div class="rm-page">
+
+    <!-- ── Cabecera ─────────────────────────────────────── -->
+    <div class="rm-head">
+        <div>
+            <h1 class="rm-head__title">Mi propiedad</h1>
+            <p class="rm-head__sub">Datos generales del hotel</p>
+        </div>
+        <div class="rm-head__actions">
+            @if (msg()) {
+                <span class="rm-toast" [class.rm-toast--err]="msgError()">
+                    <i class="pi" [class.pi-check-circle]="!msgError()" [class.pi-exclamation-circle]="msgError()"></i>
+                    {{ msg() }}
+                </span>
+            }
+            @if (hotel() && !editing()) {
+                <button class="rm-btn rm-btn--primary" (click)="startEdit()">
+                    <i class="pi pi-pencil"></i> Editar propiedad
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (loading()) {
+        <div class="rm-skel">
+            <div class="rm-row rm-row--skel"></div>
+            <div class="rm-row rm-row--skel"></div>
+            <div class="rm-row rm-row--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="rm-panel">
+            <div class="rm-empty">
+                <div class="rm-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+                <p>{{ error() }}</p>
+                <button class="rm-btn rm-btn--ghost" (click)="load()"><i class="pi pi-refresh"></i> Reintentar</button>
+            </div>
+        </div>
+    } @else {
+        @let h = hotel();
+        @if (h) {
+
+        @if (editing()) {
+            <!-- ── Modo edición ─────────────────────────────── -->
+            <div class="rm-panel">
+                <div class="ht-form">
+                    <div class="ht-form__grid">
+                        <label class="ht-field">
+                            <span>Nombre comercial *</span>
+                            <input [(ngModel)]="form.name" name="name" placeholder="Hotel …" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Razón social</span>
+                            <input [(ngModel)]="form.businessName" name="businessName" placeholder="S.A. de C.V." />
+                        </label>
+                        <label class="ht-field ht-field--full">
+                            <span>Descripción</span>
+                            <input [(ngModel)]="form.description" name="description" placeholder="Breve descripción de la propiedad" />
+                        </label>
+                        <label class="ht-field ht-field--full">
+                            <span>Dirección *</span>
+                            <input [(ngModel)]="form.address" name="address" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Código postal</span>
+                            <input [(ngModel)]="form.postalCode" name="postalCode" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Ciudad *</span>
+                            <input [(ngModel)]="form.city" name="city" />
+                        </label>
+                        <label class="ht-field">
+                            <span>País *</span>
+                            <input [(ngModel)]="form.country" name="country" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Teléfono</span>
+                            <input [(ngModel)]="form.phoneNumber" name="phoneNumber" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Email del hotel</span>
+                            <input [(ngModel)]="form.email" name="email" type="email" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Sitio web</span>
+                            <input [(ngModel)]="form.website" name="website" placeholder="https://…" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Año de apertura</span>
+                            <input type="number" [(ngModel)]="form.yearOpened" name="yearOpened" min="1900" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Categoría (estrellas)</span>
+                            <select [(ngModel)]="form.starRating" name="starRating">
+                                @for (s of [1, 2, 3, 4, 5]; track s) {
+                                    <option [value]="s">{{ s }} estrellas</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="ht-field">
+                            <span>Nº de habitaciones</span>
+                            <input type="number" [(ngModel)]="form.totalRooms" name="totalRooms" min="0" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Zona horaria</span>
+                            <input [(ngModel)]="form.timeZone" name="timeZone" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Moneda</span>
+                            <select [(ngModel)]="form.currency" name="currency">
+                                @for (c of ['USD', 'MXN', 'EUR', 'GBP', 'COP', 'ARS', 'BRL', 'CLP', 'PEN', 'CAD']; track c) {
+                                    <option [value]="c">{{ c }}</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="ht-field">
+                            <span>Impuesto predeterminado (%)</span>
+                            <input type="number" [(ngModel)]="form.taxRate" name="taxRate" min="0" max="100" step="0.1" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Hora de check-in</span>
+                            <input type="time" [(ngModel)]="form.checkInTime" name="checkInTime" />
+                        </label>
+                        <label class="ht-field">
+                            <span>Hora de check-out</span>
+                            <input type="time" [(ngModel)]="form.checkOutTime" name="checkOutTime" />
+                        </label>
+                        <label class="ht-field ht-field--full">
+                            <span>Idiomas del hotel (separados por coma)</span>
+                            <input [(ngModel)]="form.hotelLanguages" name="hotelLanguages" placeholder="es, en, fr" />
+                        </label>
+                    </div>
+                    <div class="ht-form__actions">
+                        <button class="rm-btn rm-btn--ghost" [disabled]="saving()" (click)="cancelEdit()">Cancelar</button>
+                        <button class="rm-btn rm-btn--primary" [disabled]="saving()" (click)="save()">
+                            @if (saving()) { <i class="pi pi-spin pi-spinner"></i> } @else { <i class="pi pi-check"></i> }
+                            Guardar cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+        } @else {
+            <!-- ── Vista: datos ───────────────────────────────── -->
+            <div class="rm-panel">
+                <div class="ht-view">
+                    <div class="ht-view__hero">
+                        <div class="ht-view__ava"><i class="pi pi-building"></i></div>
+                        <div>
+                            <h2 class="ht-view__name">{{ h.name }}</h2>
+                            <p class="ht-view__sub">{{ h.businessName || h.name }}</p>
+                            <div class="ht-view__stars">
+                                @for (s of [].constructor(h.starRating); track $index) { <i class="pi pi-star-fill"></i> }
+                                @for (s of [].constructor(5 - h.starRating); track $index) { <i class="pi pi-star"></i> }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ht-view__grid">
+                        <div class="ht-item"><span class="ht-item__label">Dirección</span><span class="ht-item__value">{{ h.address }}{{ h.postalCode ? ', ' + h.postalCode : '' }}</span></div>
+                        <div class="ht-item"><span class="ht-item__label">Ciudad / País</span><span class="ht-item__value">{{ h.city }}, {{ h.country }}</span></div>
+                        <div class="ht-item"><span class="ht-item__label">Teléfono</span><span class="ht-item__value">{{ h.phoneNumber || '—' }}</span></div>
+                        <div class="ht-item"><span class="ht-item__label">Email</span><span class="ht-item__value"><a [href]="'mailto:' + h.email">{{ h.email }}</a></span></div>
+                        @if (h.website) {
+                            <div class="ht-item"><span class="ht-item__label">Sitio web</span><span class="ht-item__value"><a [href]="h.website" target="_blank" rel="noopener">{{ h.website }}</a></span></div>
+                        }
+                        @if (h.yearOpened) {
+                            <div class="ht-item"><span class="ht-item__label">Año de apertura</span><span class="ht-item__value">{{ h.yearOpened }}</span></div>
+                        }
+                        <div class="ht-item"><span class="ht-item__label">Habitaciones</span><span class="ht-item__value">{{ h.totalRooms }} ({{ h.availableRooms }} disponibles)</span></div>
+                        <div class="ht-item"><span class="ht-item__label">Moneda</span><span class="ht-item__value">{{ h.currency ?? 'USD' }} {{ currencySymbol() }}</span></div>
+                        @if (h.taxRate != null) {
+                            <div class="ht-item"><span class="ht-item__label">Impuesto</span><span class="ht-item__value">{{ h.taxRate }} %</span></div>
+                        }
+                        <div class="ht-item"><span class="ht-item__label">Check-in / Check-out</span><span class="ht-item__value">{{ h.checkInTime || '—' }} / {{ h.checkOutTime || '—' }}</span></div>
+                        <div class="ht-item"><span class="ht-item__label">Zona horaria</span><span class="ht-item__value">{{ h.timeZone || 'UTC' }}</span></div>
+                        @if (h.hotelLanguages) {
+                            <div class="ht-item"><span class="ht-item__label">Idiomas</span><span class="ht-item__value">{{ h.hotelLanguages }}</span></div>
+                        }
+                        <div class="ht-item ht-item--full"><span class="ht-item__label">Módulos activos</span>
+                            <div class="ht-modules">
+                                @for (m of modules(); track m) {
+                                    <span class="ht-chip">{{ m }}</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ht-view__foot">
+                        <span>Registrada el {{ fmtDate(h.createdAt) }}{{ h.updatedAt ? ' · Actualizada el ' + fmtDate(h.updatedAt) : '' }}</span>
+                    </div>
+                </div>
+            </div>
+        }
+        }
+    }
+</div>

@@ -1,0 +1,365 @@
+.rm-page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+    font-family: inherit;
+}
+
+.rm-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+
+    &__title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+
+    &__sub {
+        margin: 0.25rem 0 0;
+        color: rgba(100, 116, 139, 1);
+        font-size: 0.9rem;
+    }
+
+    &__actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+}
+
+.rm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &--primary {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.28);
+
+        &:hover:not(:disabled) {
+            filter: brightness(1.05);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    &--ghost {
+        background: transparent;
+        border-color: rgba(226, 232, 240, 1);
+        color: #475569;
+
+        &:hover {
+            border-color: #6366f1;
+            color: #6366f1;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+}
+
+/* ── Filtros ─────────────────────────────────────────── */
+.au-filters {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid rgba(226, 232, 240, 1);
+    border-radius: 14px;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+    .au-search {
+        flex: 1 1 220px;
+        position: relative;
+
+        i {
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.6rem 0.8rem 0.6rem 2.2rem;
+            border: 1px solid rgba(226, 232, 240, 1);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            background: #f8fafc;
+
+            &:focus {
+                outline: none;
+                border-color: #6366f1;
+                background: #fff;
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+            }
+        }
+    }
+
+    .au-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+
+        &__label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        select,
+        input {
+            padding: 0.6rem 0.8rem;
+            border: 1px solid rgba(226, 232, 240, 1);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            background: #f8fafc;
+            min-width: 140px;
+
+            &:focus {
+                outline: none;
+                border-color: #6366f1;
+                background: #fff;
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+            }
+        }
+    }
+}
+
+/* ── Panel genérico (reutiliza estética de rooms) ────── */
+.rm-panel {
+    background: #fff;
+    border: 1px solid rgba(226, 232, 240, 1);
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+}
+
+.rm-skel {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .rm-row--skel {
+        height: 56px;
+        border-radius: 10px;
+        background: linear-gradient(90deg, rgba(226, 232, 240, 0.6), rgba(241, 245, 249, 0.8), rgba(226, 232, 240, 0.6));
+        background-size: 200% 100%;
+        animation: au-shimmer 1.4s infinite;
+    }
+}
+
+@keyframes au-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.rm-empty {
+    padding: 3rem 1.5rem;
+    text-align: center;
+
+    &__icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 1rem;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+        font-size: 1.4rem;
+    }
+
+    h3 {
+        margin: 0 0 0.4rem;
+        font-size: 1.05rem;
+        font-weight: 650;
+    }
+
+    p {
+        margin: 0 0 1rem;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+}
+
+/* ── Tabla ───────────────────────────────────────────── */
+.au-table {
+    &__head,
+    .au-table__row {
+        display: grid;
+        grid-template-columns: minmax(150px, 1.1fr) minmax(180px, 1.3fr) minmax(160px, 1.1fr) 90px 130px minmax(140px, 1.5fr);
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1.25rem;
+    }
+
+    &__head {
+        background: rgba(241, 245, 249, 0.7);
+        border-bottom: 1px solid rgba(226, 232, 240, 1);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+    }
+
+    .au-table__row {
+        border-bottom: 1px solid rgba(241, 245, 249, 1);
+        font-size: 0.88rem;
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover {
+            background: rgba(248, 250, 252, 0.7);
+        }
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1.25rem;
+        border-top: 1px solid rgba(226, 232, 240, 1);
+        background: rgba(248, 250, 252, 0.6);
+    }
+
+    .au-count {
+        font-size: 0.82rem;
+        color: #64748b;
+    }
+
+    .au-pager {
+        display: flex;
+        gap: 0.4rem;
+
+        .au-page {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid rgba(226, 232, 240, 1);
+            background: #fff;
+            color: #475569;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            &:hover:not(:disabled) {
+                border-color: #6366f1;
+                color: #6366f1;
+            }
+
+            &:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+        }
+    }
+}
+
+.au-when {
+    color: #475569;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.au-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+.au-user {
+    color: #0f172a;
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.au-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+
+    i { font-size: 0.7rem; }
+
+    &--ok     { background: rgba(22, 163, 74, 0.12);  color: #16a34a; }
+    &--warn   { background: rgba(245, 158, 11, 0.14); color: #d97706; }
+    &--danger { background: rgba(220, 38, 38, 0.11);  color: #dc2626; }
+    &--info   { background: rgba(99, 102, 241, 0.12); color: #6366f1; }
+    &--teal   { background: rgba(20, 184, 166, 0.12); color: #0d9488; }
+    &--amber  { background: rgba(245, 158, 11, 0.14); color: #b45309; }
+    &--neutral{ background: rgba(100, 116, 139, 0.12); color: #475569; }
+}
+
+.au-mod {
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    background: rgba(241, 245, 249, 0.9);
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+}
+
+.au-ip {
+    color: #475569;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8rem;
+}
+
+.au-detail {
+    color: #334155;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &--muted {
+        color: #cbd5e1;
+    }
+}

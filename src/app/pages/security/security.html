@@ -1,0 +1,195 @@
+<div class="rm-page">
+
+    <!-- ── Cabecera ─────────────────────────────────────── -->
+    <div class="rm-head">
+        <div>
+            <h1 class="rm-head__title">Seguridad de tu cuenta</h1>
+            <p class="rm-head__sub">Verificación en dos pasos y dispositivos conectados</p>
+        </div>
+    </div>
+
+    <!-- ── 2FA ───────────────────────────────────────────── -->
+    <div class="rm-panel sec-card">
+        <div class="sec-card__head">
+            <div class="sec-card__title">
+                <span class="sec-icon"><i class="pi pi-shield"></i></span>
+                <div>
+                    <h2>Verificación en dos pasos</h2>
+                    <p>Añade una capa extra de seguridad con una app de autenticación (Google Authenticator, Authy…).</p>
+                </div>
+            </div>
+            <span class="au-badge" [class.au-badge--ok]="twoFactorEnabled()" [class.au-badge--neutral]="!twoFactorEnabled()">
+                <i class="pi" [class.pi-check-circle]="twoFactorEnabled()" [class.pi-circle-off]="!twoFactorEnabled()"></i>
+                {{ twoFactorEnabled() ? 'Activada' : 'Desactivada' }}
+            </span>
+        </div>
+
+        <!-- Desactivada: botón para configurar -->
+        @if (!twoFactorEnabled() && !showSetup()) {
+            <div class="sec-card__body">
+                <button class="rm-btn rm-btn--primary" [disabled]="setupLoading()" (click)="startSetup()">
+                    <i class="pi pi-plus"></i> Configurar verificación en dos pasos
+                </button>
+            </div>
+        }
+
+        <!-- Configurando: QR + clave + código -->
+        @if (showSetup() && !twoFactorEnabled()) {
+            <div class="sec-setup">
+                <div class="sec-setup__qr">
+                    <img [src]="qrDataUrl()" alt="Código QR para la aplicación de autenticación" />
+                    <p>Escríbelo con tu app de autenticación.</p>
+                </div>
+                <div class="sec-setup__form">
+                    <p class="sec-hint">O introduce esta clave manualmente:</p>
+                    <div class="sec-key">
+                        <span>{{ sharedKey() }}</span>
+                        <button class="rm-btn rm-btn--ghost" (click)="copyKey()" title="Copiar clave">
+                            <i class="pi pi-copy"></i>
+                        </button>
+                    </div>
+                    <div class="sec-field">
+                        <span>Código de 6 dígitos</span>
+                        <input [(ngModel)]="setupCode" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" (keyup.enter)="confirmSetup()" />
+                    </div>
+                    @if (setupMsg()) {
+                        <p class="sec-msg" [class.sec-msg--err]="setupError()" [class.sec-msg--ok]="!setupError()">{{ setupMsg() }}</p>
+                    }
+                    <button class="rm-btn rm-btn--primary" [disabled]="setupLoading()" (click)="confirmSetup()">
+                        <i class="pi pi-check"></i> Verificar y activar
+                    </button>
+                </div>
+            </div>
+        }
+
+        <!-- Activada: estado + desactivar -->
+        @if (twoFactorEnabled()) {
+            <div class="sec-card__body sec-on">
+                <div class="sec-on__info">
+                    <i class="pi pi-check-circle"></i>
+                    <div>
+                        <strong>Tu cuenta está protegida con verificación en dos pasos.</strong>
+                        <p>En cada inicio de sesión se pedirá un código adicional en este u otros dispositivos.</p>
+                    </div>
+                </div>
+
+                @if (recoveryCodes().length && !recoveryAcked()) {
+                    <div class="sec-recovery">
+                        <p class="sec-hint"><i class="pi pi-exclamation-triangle"></i> Guarda estos códigos de recuperación en un lugar seguro. Se usan una sola vez y solo cuando no tienes acceso a tu app de autenticación.</p>
+                        <div class="sec-recovery__list">
+                            @for (c of recoveryCodes(); track c) {
+                                <span class="sec-code">{{ c }}</span>
+                            }
+                        </div>
+                        <button class="rm-btn rm-btn--primary" (click)="ackRecovery()">He guardado mis códigos</button>
+                    </div>
+                }
+
+                @if (recoveryAcked()) {
+                    <div class="sec-restore">
+                        <p class="sec-msg sec-msg--ok"><i class="pi pi-check-circle"></i> Configuración completada. Tu app de autenticación ya genera tus códigos.</p>
+                    </div>
+                }
+
+                <div class="sec-regen">
+                    @if (!showRegen()) {
+                        <button class="rm-btn rm-btn--ghost" (click)="openRegen()">
+                            <i class="pi pi-refresh"></i> Regenerar códigos de recuperación
+                        </button>
+                        @if (regenSuccess()) {
+                            <p class="sec-msg sec-msg--ok"><i class="pi pi-check-circle"></i> Códigos regenerados. Guarda los nuevos: los anteriores dejaron de servir.</p>
+                        }
+                    } @else {
+                        <div class="sec-regen__form">
+                            <p class="sec-hint"><i class="pi pi-exclamation-triangle"></i> Introduce un código actual de tu app de autenticación para generar códigos de recuperación nuevos.</p>
+                            <input [(ngModel)]="regenCode" placeholder="000000" maxlength="6" inputmode="numeric" (keyup.enter)="regenerate()" />
+                            <div class="sec-regen__actions">
+                                <button class="rm-btn rm-btn--ghost" [disabled]="regenLoading()" (click)="showRegen.set(false)">Cancelar</button>
+                                <button class="rm-btn rm-btn--primary" [disabled]="regenLoading()" (click)="regenerate()">
+                                    <i class="pi pi-check"></i> Regenerar códigos
+                                </button>
+                            </div>
+                            @if (regenMsg()) {
+                                <p class="sec-msg" [class.sec-msg--err]="regenError()" [class.sec-msg--ok]="!regenError()">{{ regenMsg() }}</p>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="sec-disable">
+                    <div class="sec-field">
+                        <span>Código actual para desactivar</span>
+                        <input [(ngModel)]="disableCode" placeholder="000000" maxlength="6" inputmode="numeric" (keyup.enter)="disable()" />
+                    </div>
+                    <button class="rm-btn rm-btn--ghost rm-btn--danger" [disabled]="busyDisable()" (click)="disable()">
+                        <i class="pi pi-lock-open"></i> Desactivar verificación en dos pasos
+                    </button>
+                </div>
+                @if (disableMsg()) {
+                    <p class="sec-msg" [class.sec-msg--err]="disableError()" [class.sec-msg--ok]="!disableError()">{{ disableMsg() }}</p>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- ── Sesiones activas ──────────────────────────────── -->
+    <div class="rm-panel sec-card">
+        <div class="sec-card__head">
+            <div class="sec-card__title">
+                <span class="sec-icon"><i class="pi pi-device"></i></span>
+                <div>
+                    <h2>Sesiones activas</h2>
+                    <p>Dispositivos con acceso a tu cuenta. Revoca los que no reconozcas.</p>
+                </div>
+            </div>
+            <button class="rm-btn rm-btn--ghost" (click)="loadSessions()" [disabled]="sessionsLoading()"><i class="pi pi-refresh"></i> Actualizar</button>
+        </div>
+
+        <div class="sec-card__body">
+            @if (sessionsError()) {
+                <div class="rm-empty" style="padding: 1.5rem">
+                    <p>{{ sessionsError() }}</p>
+                    <button class="rm-btn rm-btn--ghost" (click)="loadSessions()"><i class="pi pi-refresh"></i> Reintentar</button>
+                </div>
+            } @else if (sessionsLoading()) {
+                <div class="rm-skel">
+                    <div class="rm-row rm-row--skel"></div>
+                    <div class="rm-row rm-row--skel"></div>
+                </div>
+            } @else if (!sessions().length) {
+                <div class="rm-empty" style="padding: 1.5rem">
+                    <div class="rm-empty__icon" style="width: 44px; height: 44px"><i class="pi pi-device"></i></div>
+                    <h3>No hay sesiones activas</h3>
+                    <p>Solo aparecen aquí los dispositivos con una sesión abierta en los últimos días.</p>
+                </div>
+            } @else {
+                <div class="sec-sessions">
+                    @for (s of sessions(); track s.id) {
+                        <div class="sec-session" [class.sec-session--current]="s.isCurrent">
+                            <span class="sec-session__icon"><i class="pi pi-desktop"></i></span>
+                            <div class="sec-session__info">
+                                <div class="sec-session__name">
+                                    {{ s.deviceName }}
+                                    @if (s.isCurrent) {
+                                        <span class="au-badge au-badge--ok" style="margin-left: 8px"><i class="pi pi-check-circle"></i> Esta sesión</span>
+                                    }
+                                </div>
+                                <div class="sec-session__meta">
+                                    @if (s.ipAddress) { {{ s.ipAddress }} · }
+                                    Última actividad {{ fmtDate(s.lastUsedAt) }}
+                                </div>
+                                <div class="sec-session__meta">Expira el {{ fmtDate(s.expiresAt) }}</div>
+                            </div>
+                            @if (!s.isCurrent) {
+                                <button class="rm-btn rm-btn--ghost rm-btn--danger" [disabled]="revokingId() !== null" (click)="revoke(s.id)">
+                                    @if (revokingId() === s.id) { <span style="display:inline-block" class="sec-spin"></span> } @else { <i class="pi pi-times-circle"></i> }
+                                    Cerrar
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

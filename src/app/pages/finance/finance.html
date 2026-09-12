@@ -1,0 +1,440 @@
+<div class="fn-page">
+
+    <!-- ── Cabecera ─────────────────────────────────────── -->
+    <div class="fn-head">
+        <div>
+            <h1 class="fn-head__title">Finanzas</h1>
+            <p class="fn-head__sub">{{ hotelName() }}</p>
+        </div>
+        <div class="fn-head__actions">
+            @if (msg()) {
+                <span class="fn-toast" [class.fn-toast--err]="msgError()">
+                    <i class="pi" [class.pi-check-circle]="!msgError()" [class.pi-exclamation-circle]="msgError()"></i>
+                    {{ msg() }}
+                </span>
+            }
+            <button class="fn-btn fn-btn--primary" (click)="loadReservationsForPicker('payment')">
+                <i class="pi pi-plus"></i> Registrar pago
+            </button>
+            <button class="fn-btn fn-btn--ghost" (click)="loadReservationsForPicker('invoice')">
+                <i class="pi pi-file-plus"></i> Facturar reserva
+            </button>
+        </div>
+    </div>
+
+    @if (loading()) {
+        <div class="fn-panel fn-skel">
+            <div class="fn-row fn-row--skel"></div>
+            <div class="fn-row fn-row--skel"></div>
+            <div class="fn-row fn-row--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="fn-panel fn-empty">
+            <div class="fn-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+            <h3>{{ error() }}</h3>
+            <button class="fn-btn fn-btn--ghost" (click)="retry()"><i class="pi pi-refresh"></i> Reintentar</button>
+        </div>
+    } @else if (summary()) {
+
+        <!-- KPIs -->
+        <div class="fn-kpis">
+            <div class="fn-kpi">
+                <span class="fn-kpi__label">Ingresos (estancias cerradas)</span>
+                <span class="fn-kpi__value fn-kpi__value--ok">{{ fmtMoney(summary()!.totalRevenue) }}</span>
+                <span class="fn-kpi__sub">{{ summary()!.completedStays }} estancias</span>
+            </div>
+            <div class="fn-kpi">
+                <span class="fn-kpi__label">Cobrado</span>
+                <span class="fn-kpi__value">{{ fmtMoney(summary()!.collected) }}</span>
+            </div>
+            <div class="fn-kpi fn-kpi--warn">
+                <span class="fn-kpi__label">Pendiente de cobro</span>
+                <span class="fn-kpi__value">{{ fmtMoney(summary()!.outstanding) }}</span>
+            </div>
+            <div class="fn-kpi">
+                <span class="fn-kpi__label">Tarifa media</span>
+                <span class="fn-kpi__value">{{ fmtMoney(summary()!.averageDailyRate) }}</span>
+                <span class="fn-kpi__sub">Ocupación {{ summary()!.occupancyRate }}%</span>
+            </div>
+            <div class="fn-kpi fn-kpi--pick" [class.fn-kpi--on]="tab() === 'invoices'">
+                <span class="fn-kpi__label">Facturas</span>
+                <span class="fn-kpi__value">{{ summary()!.openInvoices }}</span>
+                <span class="fn-kpi__sub">{{ summary()!.overdueInvoices }} vencida{{ summary()!.overdueInvoices === 1 ? '' : 's' }}</span>
+            </div>
+        </div>
+
+        <!-- Métodos de pago -->
+        @if (summary()!.methods.length) {
+            <div class="fn-methods">
+                <span class="fn-methods__label">Cobros por método</span>
+                <div class="fn-methods__list">
+                    @for (m of summary()!.methods; track m.method) {
+                        <span class="fn-method">
+                            <i class="pi" [class.pi-credit-card]="m.method.includes('Card')" [class.pi-money-bill]="m.method === 'Cash'" [class.pi-bank]="m.method === 'Transfer'" [class.pi-wallet]="m.method === 'Check'"></i>
+                            {{ m.displayName }} · {{ fmtMoney(m.amount) }} <em>({{ m.count }})</em>
+                        </span>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Tabs -->
+        <div class="fn-tabs">
+            <button class="fn-tab" [class.fn-tab--on]="tab() === 'payments'" (click)="setTab('payments')">
+                <i class="pi pi-wallet"></i> Pagos <span class="fn-tab__n">{{ paymentsTotal() }}</span>
+            </button>
+            <button class="fn-tab" [class.fn-tab--on]="tab() === 'invoices'" (click)="setTab('invoices')">
+                <i class="pi pi-file"></i> Facturas <span class="fn-tab__n">{{ invoicesTotal() }}</span>
+            </button>
+        </div>
+
+        @if (tab() === 'payments') {
+            <div class="fn-toolbar">
+                <div class="fn-pills">
+                    @for (s of statusOptionsPayment; track s) {
+                        <button class="fn-pill" [class.fn-pill--on]="filterStatus() === s" (click)="filterStatus.set(s)">{{ s === 'Todos' ? 'Todos' : payStatusLabel(s) }}</button>
+                    }
+                </div>
+                <div class="fn-search">
+                    <i class="pi pi-search"></i>
+                    <input [(ngModel)]="search" placeholder="Buscar reserva, huésped, referencia…" />
+                </div>
+            </div>
+
+            @if (!payments().length) {
+                <div class="fn-panel fn-empty">
+                    <div class="fn-empty__icon"><i class="pi pi-wallet"></i></div>
+                    <h3>Sin pagos registrados</h3>
+                </div>
+            } @else {
+                <div class="fn-panel fn-table fn-table--payments">
+                    <div class="fn-table__head">
+                        <div class="fn-c fn-c--date">Fecha</div>
+                        <div class="fn-c fn-c--resv">Reserva</div>
+                        <div class="fn-c fn-c--guest">Huésped</div>
+                        <div class="fn-c fn-c--method">Método</div>
+                        <div class="fn-c fn-c--ref">Referencia</div>
+                        <div class="fn-c fn-c--num">Importe</div>
+                        <div class="fn-c fn-c--status">Estado</div>
+                    </div>
+                    @for (p of payments(); track p.id) {
+                        <div class="fn-table__row" [class.fn-table__row--refund]="p.isRefund">
+                            <div class="fn-c fn-c--date">{{ fmtDate(p.paymentDate) }}</div>
+                            <div class="fn-c fn-c--resv">
+                                <span class="fn-ref">{{ p.reservationNumber }}</span>
+                                <span class="fn-hint">#{{ p.roomNumber }}</span>
+                            </div>
+                            <div class="fn-c fn-c--guest">
+                                <span class="fn-guest">{{ p.guestName }}</span>
+                                <span class="fn-hint">{{ p.processedBy }}</span>
+                            </div>
+                            <div class="fn-c fn-c--method">{{ p.paymentMethodDisplay }}</div>
+                            <div class="fn-c fn-c--ref"><span class="fn-mono">{{ p.referenceNumber || '—' }}</span></div>
+                            <div class="fn-c fn-c--num fn-price">
+                                @if (p.isRefund) { − } {{ fmtMoney(p.amount) }}
+                            </div>
+                            <div class="fn-c fn-c--status">
+                                <span class="fn-badge fn-badge--{{ p.status.toLowerCase() }}">{{ payStatusLabel(p.status) }}</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        @if (tab() === 'invoices') {
+            <div class="fn-toolbar">
+                <div class="fn-pills">
+                    @for (s of statusOptionsInvoice; track s) {
+                        <button class="fn-pill" [class.fn-pill--on]="filterStatus() === s" (click)="filterStatus.set(s)">{{ s === 'Todos' ? 'Todos' : invStatusLabel(s) }}</button>
+                    }
+                </div>
+                <div class="fn-search">
+                    <i class="pi pi-search"></i>
+                    <input [(ngModel)]="search" placeholder="Buscar nº factura, cliente, reserva…" />
+                </div>
+            </div>
+
+            @if (!invoices().length) {
+                <div class="fn-panel fn-empty">
+                    <div class="fn-empty__icon"><i class="pi pi-file"></i></div>
+                    <h3>Sin facturas</h3>
+                    @if (!invoicesTotal()) {
+                        <p>Crea una factura desde una reserva con «Facturar reserva».</p>
+                    }
+                </div>
+            } @else {
+                <div class="fn-panel fn-table fn-table--invoices">
+                    <div class="fn-table__head">
+                        <div class="fn-c fn-c--resv">Factura</div>
+                        <div class="fn-c fn-c--guest">Cliente</div>
+                        <div class="fn-c fn-c--resv">Reserva</div>
+                        <div class="fn-c fn-c--date">Emisión</div>
+                        <div class="fn-c fn-c--num">Total</div>
+                        <div class="fn-c fn-c--num">Saldo</div>
+                        <div class="fn-c fn-c--status">Estado</div>
+                        <div class="fn-c fn-c--acts">Acciones</div>
+                    </div>
+                    @for (i of invoices(); track i.id) {
+                        <div class="fn-table__row" [class.fn-table__row--muted]="i.status === 'Cancelled'">
+                            <div class="fn-c fn-c--resv"><span class="fn-ref fn-ref--inv">{{ i.invoiceNumber }}</span></div>
+                            <div class="fn-c fn-c--guest"><span class="fn-guest">{{ i.customerName }}</span></div>
+                            <div class="fn-c fn-c--resv"><span class="fn-mono">{{ i.reservationNumber }}</span></div>
+                            <div class="fn-c fn-c--date">{{ fmtDate(i.issueDate) }}</div>
+                            <div class="fn-c fn-c--num fn-price">{{ fmtMoney(i.totalAmount) }}</div>
+                            <div class="fn-c fn-c--num" [class.fn-price--warn]="i.balanceDue > 0">{{ fmtMoney(i.balanceDue) }}</div>
+                            <div class="fn-c fn-c--status">
+                                <span class="fn-badge fn-badge--{{ i.status.toLowerCase() }}">{{ i.statusDescription }}</span>
+                            </div>
+                            <div class="fn-c fn-c--acts">
+                                <button class="fn-act fn-act--ghost" title="Ver factura" (click)="viewInvoice(i)"><i class="pi pi-eye"></i> Ver</button>
+                                @if (i.status === 'Draft') {
+                                    <button class="fn-act fn-act--ok" [disabled]="busy()" title="Emitir factura" (click)="issueInvoice(i)"><i class="pi pi-send"></i> Emitir</button>
+                                }
+                                @if (i.status !== 'Paid' && i.status !== 'Cancelled') {
+                                    <button class="fn-act fn-act--warn" [disabled]="busy()" title="Cancelar factura" (click)="cancelInvoice(i)"><i class="pi pi-times"></i> Cancelar</button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        @if ((tab() === 'payments' && paymentsTotal() > pageSize) || (tab() === 'invoices' && invoicesTotal() > pageSize)) {
+            <div class="fn-pager">
+                <button class="fn-btn fn-btn--ghost" [disabled]="page() <= 1" (click)="goPage(-1)"><i class="pi pi-chevron-left"></i> Anterior</button>
+                <span class="fn-pager__info">Página {{ page() }} de {{ tab() === 'payments' ? pageInfoPayments() : pageInfoInvoices() }}</span>
+                <button class="fn-btn fn-btn--ghost" [disabled]="page() >= (tab() === 'payments' ? pageInfoPayments() : pageInfoInvoices())" (click)="goPage(1)">Siguiente <i class="pi pi-chevron-right"></i></button>
+            </div>
+        }
+    }
+
+    <!-- ── Modal: registrar pago ─────────────────────────── -->
+    @if (showPayment()) {
+        <div class="fn-overlay" (click)="showPayment.set(false)">
+            <div class="fn-modal" (click)="$event.stopPropagation()">
+                <div class="fn-modal__head">
+                    <h3>Registrar pago</h3>
+                    <button class="fn-modal__x" (click)="showPayment.set(false)"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="fn-modal__body">
+                    <label class="fn-field">
+                        <span>Reserva *</span>
+                        <select [(ngModel)]="form.reservationId" (ngModelChange)="onReservationPicked()">
+                            <option [ngValue]="''" disabled>Selecciona una reserva</option>
+                            @for (r of payables(); track r.id) {
+                                <option [ngValue]="r.id">{{ r.reservationNumber }} · {{ r.guestName }} · saldo {{ fmtMoney(r.balanceDue) }}</option>
+                            }
+                        </select>
+                    </label>
+                    @if (form.reservationId && !payables().length) {
+                        <span class="fn-field__warn"><i class="pi pi-exclamation-circle"></i> No hay reservas con saldo pendiente.</span>
+                    }
+                    <label class="fn-field">
+                        <span>Importe *</span>
+                        <input type="number" [(ngModel)]="form.amount" min="0.01" step="0.01" />
+                    </label>
+                    <label class="fn-field">
+                        <span>Método</span>
+                        <select [(ngModel)]="form.paymentMethod">
+                            <option value="Cash">Efectivo</option>
+                            <option value="CreditCard">Tarjeta de crédito</option>
+                            <option value="DebitCard">Tarjeta de débito</option>
+                            <option value="Transfer">Transferencia</option>
+                            <option value="Check">Cheque</option>
+                        </select>
+                    </label>
+                    @if (form.paymentMethod.includes('Card')) {
+                        <div class="fn-field fn-field--split">
+                            <label class="fn-field">
+                                <span>Tarjeta</span>
+                                <select [(ngModel)]="form.cardType">
+                                    <option>Visa</option>
+                                    <option>MasterCard</option>
+                                    <option>Amex</option>
+                                    <option>Otro</option>
+                                </select>
+                            </label>
+                            <label class="fn-field">
+                                <span>Últimos 4</span>
+                                <input [(ngModel)]="form.lastFourDigits" maxlength="4" placeholder="1234" />
+                            </label>
+                        </div>
+                    }
+                    <label class="fn-field">
+                        <span>Referencia (opcional)</span>
+                        <input [(ngModel)]="form.referenceNumber" placeholder="PAY-…" />
+                    </label>
+                </div>
+                <div class="fn-modal__foot">
+                    <button class="fn-btn fn-btn--ghost" (click)="showPayment.set(false)">Cancelar</button>
+                    <button class="fn-btn fn-btn--primary" [disabled]="!canCreatePayment()" (click)="submitPayment()">
+                        <i class="pi pi-check"></i> Registrar pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── Modal: facturar reserva ───────────────────────── -->
+    @if (showInvoiceFromReservation()) {
+        <div class="fn-overlay" (click)="showInvoiceFromReservation.set(false)">
+            <div class="fn-modal" (click)="$event.stopPropagation()">
+                <div class="fn-modal__head">
+                    <h3>Facturar reserva</h3>
+                    <button class="fn-modal__x" (click)="showInvoiceFromReservation.set(false)"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="fn-modal__body">
+                    <label class="fn-field">
+                        <span>Reserva *</span>
+                        <select [(ngModel)]="form.reservationId" (ngModelChange)="onReservationPicked()">
+                            <option [ngValue]="''" disabled>Selecciona una reserva</option>
+                            @for (r of reservations(); track r.id) {
+                                <option [ngValue]="r.id">{{ r.reservationNumber }} · {{ r.guestName }} · {{ fmtMoney(r.totalAmount) }}</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="fn-field">
+                        <span>Condiciones de pago</span>
+                        <input [(ngModel)]="form.paymentTerms" placeholder="30 días" />
+                    </label>
+                    <label class="fn-field">
+                        <span>Notas</span>
+                        <textarea [(ngModel)]="form.notes" rows="2" placeholder="Notas de la factura…"></textarea>
+                    </label>
+                    <p class="fn-hint-block">Se generarán líneas con el alojamiento (TARIFA × N noches) y cama extra si aplica, más IVA de la reserva.</p>
+                </div>
+                <div class="fn-modal__foot">
+                    <button class="fn-btn fn-btn--ghost" (click)="showInvoiceFromReservation.set(false)">Cancelar</button>
+                    <button class="fn-btn fn-btn--primary" [disabled]="!canCreateInvoice()" (click)="submitInvoice()">
+                        <i class="pi pi-file-plus"></i> Crear factura
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── Modal: detalle factura ────────────────────────── -->
+    @if (showDetail()) {
+        <div class="fn-overlay" (click)="showDetail.set(false)">
+            <div class="fn-modal fn-modal--wide" (click)="$event.stopPropagation()">
+                <div class="fn-modal__head">
+                    <h3>{{ invoiceDetail()?.invoiceNumber ?? 'Factura' }}</h3>
+                    <button class="fn-modal__x" (click)="showDetail.set(false)"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="fn-modal__body">
+                    @if (detailLoading()) {
+                        <div class="fn-skel-small"></div>
+                    } @else {
+                        @let inv = invoiceDetail();
+                        @if (inv) {
+                        <div class="fn-inv-head">
+                            <div>
+                                <span class="fn-guest">{{ inv.customerName }}</span>
+                                <span class="fn-hint">{{ inv.customerEmail }}</span>
+                                <span class="fn-hint">{{ inv.hotelName }} · Reserva {{ inv.reservationNumber }}</span>
+                                <span class="fn-hint">Emisión {{ fmtDate(inv.issueDate) }} · Vence {{ fmtDate(inv.dueDate) }} @if (inv.paymentTerms) { · {{ inv.paymentTerms }} }</span>
+                            </div>
+                            <span class="fn-badge fn-badge--{{ inv.status.toLowerCase() }}">{{ inv.statusDescription }}</span>
+                        </div>
+
+                        <div class="fn-inv-lines">
+                            <div class="fn-inv-line fn-inv-line--head">
+                                <span class="fn-c--desc">Concepto</span>
+                                <span class="fn-c--q">Cant.</span>
+                                <span class="fn-c--amt">Precio</span>
+                                <span class="fn-c--amt">Total</span>
+                            </div>
+                            @for (l of inv.lineItems; track $index) {
+                                <div class="fn-inv-line">
+                                    <span class="fn-c--desc">{{ l.description }} <em class="fn-hint">{{ l.taxCode }}</em></span>
+                                    <span class="fn-c--q">{{ l.quantity }}</span>
+                                    <span class="fn-c--amt">{{ fmtMoney(l.unitPrice) }}</span>
+                                    <span class="fn-c--amt fn-price">{{ fmtMoney(l.total) }}</span>
+                                </div>
+                            }
+                            <div class="fn-inv-line fn-inv-line--totals">
+                                <span></span><span></span>
+                                <span class="fn-hint">Subtotal</span>
+                                <span class="fn-c--amt">{{ fmtMoney(inv.subtotal) }}</span>
+                                <span></span><span></span>
+                                <span class="fn-hint">Impuestos</span>
+                                <span class="fn-c--amt">{{ fmtMoney(inv.taxAmount) }}</span>
+                                <span></span><span></span>
+                                <span class="fn-guest">Total</span>
+                                <span class="fn-c--amt fn-price">{{ fmtMoney(inv.totalAmount) }}</span>
+                            </div>
+                        </div>
+
+                        <div class="fn-inv-pay">
+                            <div class="fn-inv-pay__row">
+                                <span class="fn-hint">Pagado</span>
+                                <span>{{ fmtMoney(inv.amountPaid) }}</span>
+                            </div>
+                            <div class="fn-inv-pay__row">
+                                <span class="fn-guest">Saldo pendiente</span>
+                                <span class="fn-price" [class.fn-price--warn]="inv.balanceDue > 0">{{ fmtMoney(inv.balanceDue) }}</span>
+                            </div>
+                        </div>
+
+                        @if (inv.notes) {
+                            <p class="fn-hint-block"><i class="pi pi-comment"></i> {{ inv.notes }}</p>
+                        }
+                        }
+                    }
+                </div>
+                <div class="fn-modal__foot">
+                    <button class="fn-btn fn-btn--ghost" (click)="showDetail.set(false)">Cerrar</button>
+                    @let invF = invoiceDetail();
+                    @if (invF) {
+                        @if (invF.status === 'Draft') {
+                            <button class="fn-btn fn-btn--primary" [disabled]="busy()" (click)="issueInvoice(invF); showDetail.set(false)">
+                                <i class="pi pi-send"></i> Emitir
+                            </button>
+                        }
+                        @if (invF.status === 'Issued' || invF.status === 'Sent' || invF.status === 'Overdue') {
+                            <button class="fn-btn fn-btn--primary" [disabled]="busy()" (click)="openPayInvoice()">
+                                <i class="pi pi-credit-card"></i> Registrar pago
+                            </button>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── Modal: pagar factura ──────────────────────────── -->
+    @if (showPayInvoice()) {
+        <div class="fn-overlay" (click)="showPayInvoice.set(false)">
+            <div class="fn-modal" (click)="$event.stopPropagation()">
+                <div class="fn-modal__head">
+                    <h3>Pago de factura {{ invoiceDetail()?.invoiceNumber }}</h3>
+                    <button class="fn-modal__x" (click)="showPayInvoice.set(false)"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="fn-modal__body">
+                    <label class="fn-field">
+                        <span>Importe *</span>
+                        <input type="number" [(ngModel)]="payInvoice.amount" min="0.01" step="0.01" />
+                    </label>
+                    <label class="fn-field">
+                        <span>Método</span>
+                        <select [(ngModel)]="payInvoice.paymentMethod">
+                            <option value="Cash">Efectivo</option>
+                            <option value="CreditCard">Tarjeta de crédito</option>
+                            <option value="DebitCard">Tarjeta de débito</option>
+                            <option value="Transfer">Transferencia</option>
+                            <option value="Check">Cheque</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="fn-modal__foot">
+                    <button class="fn-btn fn-btn--ghost" (click)="showPayInvoice.set(false)">Cancelar</button>
+                    <button class="fn-btn fn-btn--primary" [disabled]="payInvoice.amount <= 0" (click)="submitInvoicePayment()">
+                        <i class="pi pi-check"></i> Registrar pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>

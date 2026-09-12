@@ -1,0 +1,273 @@
+<div class="rm-page">
+
+    <!-- ── Cabecera ─────────────────────────────────────── -->
+    <div class="rm-head">
+        <div>
+            <h1 class="rm-head__title">Habitaciones</h1>
+            <p class="rm-head__sub">{{ hotelName() }}</p>
+        </div>
+        <div class="rm-head__actions">
+            @if (msg()) {
+                <span class="rm-toast" [class.rm-toast--err]="msgError()">
+                    <i class="pi" [class.pi-check-circle]="!msgError()" [class.pi-exclamation-circle]="msgError()"></i>
+                    {{ msg() }}
+                </span>
+            }
+            @if (roomTypes().length) {
+                <button class="rm-btn rm-btn--primary" (click)="openCreate()">
+                    <i class="pi pi-plus"></i> Nueva habitación
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- ── KPIs ─────────────────────────────────────────── -->
+    <div class="rm-kpis">
+        <div class="rm-kpi">
+            <span class="rm-kpi__label">Total</span>
+            <span class="rm-kpi__value">{{ stats().total }}</span>
+        </div>
+        <div class="rm-kpi rm-kpi--ok">
+            <span class="rm-kpi__label">Disponibles</span>
+            <span class="rm-kpi__value">{{ stats().available }}</span>
+        </div>
+        <div class="rm-kpi rm-kpi--busy">
+            <span class="rm-kpi__label">Ocupadas</span>
+            <span class="rm-kpi__value">{{ stats().occupied }}</span>
+        </div>
+        <div class="rm-kpi rm-kpi--warn">
+            <span class="rm-kpi__label">Mantenimiento</span>
+            <span class="rm-kpi__value">{{ stats().maintenance }}</span>
+        </div>
+        <div class="rm-kpi rm-kpi--dirty">
+            <span class="rm-kpi__label">Sin limpiar</span>
+            <span class="rm-kpi__value">{{ stats().dirty }}</span>
+        </div>
+        <div class="rm-kpi">
+            <span class="rm-kpi__label">Ocupación</span>
+            <span class="rm-kpi__value">{{ stats().occupancyRate }}%</span>
+            <span class="rm-kpi__sub">ADR \${{ stats().avgPrice }}</span>
+        </div>
+    </div>
+
+    <!-- ── Tickets de mantenimiento ───────────────────────── -->
+    @if (!loading() && !error() && tickets().length) {
+        <div class="rm-panel rm-tickets">
+            <div class="rm-tickets__head">
+                <div>
+                    <h3 class="rm-tickets__title"><i class="pi pi-wrench"></i> Mantenimiento pendiente</h3>
+                    <span class="rm-tickets__count">{{ tickets().length }} {{ tickets().length === 1 ? 'ticket' : 'tickets' }}</span>
+                </div>
+            </div>
+            <div class="rm-tickets__list">
+                @for (t of tickets(); track t.ticketId ?? (t.room + t.issue)) {
+                    <div class="rm-ticket">
+                        <div class="rm-ticket__room">
+                            <span class="rm-roomnum">{{ t.room }}</span>
+                        </div>
+                        <div class="rm-ticket__body">
+                            <span class="rm-ticket__issue">{{ t.issue }}</span>
+                            <span class="rm-ticket__meta">
+                                <span class="rm-badge rm-badge--{{ t.status.toLowerCase() === 'open' ? 'maintenance' : 'x' }}">{{ priorityLabel(t.priority) }}</span>
+                                @if (t.sla) { <span class="rm-hint">SLA: {{ t.sla }}</span> }
+                            </span>
+                        </div>
+                        <div class="rm-ticket__acts">
+                            <button class="rm-act rm-act--fix" [disabled]="busy()" (click)="completeTicket(t)">
+                                <i class="pi pi-check"></i> Completar
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- ── Filtros ──────────────────────────────────────── -->
+    @if (!loading() && !error()) {
+        <div class="rm-toolbar">
+            <div class="rm-pills">
+                @for (s of statusOptions; track s) {
+                    <button class="rm-pill" [class.rm-pill--on]="filterStatus() === s" (click)="setFilter(s)">
+                        {{ s === 'Todos' ? 'Todas' : statusLabel(s) }}
+                        @if (s !== 'Todos') {
+                            <span class="rm-pill__n">{{ countByStatus()[s] || 0 }}</span>
+                        }
+                    </button>
+                }
+            </div>
+            <div class="rm-search">
+                <i class="pi pi-search"></i>
+                <input [(ngModel)]="search" placeholder="Buscar habitación, piso…" />
+            </div>
+        </div>
+    }
+
+    <!-- ── Lista / tabla ────────────────────────────────── -->
+    @if (loading()) {
+        <div class="rm-panel rm-skel">
+            <div class="rm-row rm-row--skel"></div>
+            <div class="rm-row rm-row--skel"></div>
+            <div class="rm-row rm-row--skel"></div>
+            <div class="rm-row rm-row--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="rm-panel rm-empty">
+            <div class="rm-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+            <h3>{{ error() }}</h3>
+            <button class="rm-btn rm-btn--ghost" (click)="retry()"><i class="pi pi-refresh"></i> Reintentar</button>
+        </div>
+    } @else if (!filtered().length) {
+        <div class="rm-panel rm-empty">
+            <div class="rm-empty__icon"><i class="pi pi-building"></i></div>
+            <h3>No hay habitaciones que coincidan</h3>
+            @if (!rooms().length) {
+                <p>Todavía no hay habitaciones en {{ hotelName() }}. Crea la primera.</p>
+            }
+        </div>
+    } @else {
+        <div class="rm-panel rm-table">
+            <div class="rm-table__head">
+                <div class="rm-c rm-c--room">Habitación</div>
+                <div class="rm-c rm-c--type">Tipo</div>
+                <div class="rm-c rm-c--num">Piso</div>
+                <div class="rm-c rm-c--num">Huéspedes</div>
+                <div class="rm-c rm-c--num">Precio</div>
+                <div class="rm-c rm-c--status">Estado</div>
+                <div class="rm-c rm-c--clean">Limpieza</div>
+                <div class="rm-c rm-c--acts">Acciones</div>
+            </div>
+            @for (room of filtered(); track room.id) {
+                <div class="rm-table__row" [class.rm-table__row--muted]="room.isMaintenanceRequired && room.status === 'Maintenance'">
+                    <div class="rm-c rm-c--room">
+                        <span class="rm-roomnum">{{ room.roomNumber }}</span>
+                        @if (room.description) { <span class="rm-hint">{{ room.description }}</span> }
+                    </div>
+                    <div class="rm-c rm-c--type">{{ room.roomTypeName || '—' }}</div>
+                    <div class="rm-c rm-c--num">Nivel {{ room.floor }}</div>
+                    <div class="rm-c rm-c--num">{{ room.maxOccupancy }} hués.</div>
+                    <div class="rm-c rm-c--num rm-price">\${{ room.price | number }}</div>
+                    <div class="rm-c rm-c--status">
+                        <span class="rm-badge rm-badge--{{ (statusLabel(room.status) ? room.status : 'x').toLowerCase() }}">
+                            {{ statusLabel(room.status) }}
+                            @if (room.isMaintenanceRequired) { <i class="pi pi-wrench" title="Requiere mantenimiento"></i> }
+                        </span>
+                    </div>
+                    <div class="rm-c rm-c--clean">
+                        <span class="rm-clean" [class.rm-clean--dirty]="!room.isClean">
+                            <i class="pi" [class.pi-check-circle]="room.isClean" [class.pi-times-circle]="!room.isClean"></i>
+                            {{ room.isClean ? 'Limpia' : 'Sucio' }}
+                        </span>
+                    </div>
+                    <div class="rm-c rm-c--acts">
+                        @if (room.status !== 'Occupied' && room.status !== 'Available') {
+                            <button class="rm-act rm-act--ok" title="Marcar disponible" (click)="setAvailable(room)" [disabled]="busy()">
+                                <i class="pi pi-check"></i> Disponible
+                            </button>
+                        }
+                        @if (room.isClean && room.status !== 'Dirty') {
+                            <button class="rm-act rm-act--warn" title="Marcar sucia" [disabled]="busy()" (click)="markDirty(room)">
+                                <i class="pi pi-inbox"></i> Sucio
+                            </button>
+                        }
+                        @if (!room.isClean && room.status !== 'Occupied') {
+                            <button class="rm-act rm-act--ok" title="Marcar limpia" [disabled]="busy()" (click)="markClean(room)">
+                                <i class="pi pi-check-square"></i> Limpia
+                            </button>
+                        }
+                        @if (room.isMaintenanceRequired) {
+                            <button class="rm-act rm-act--fix" title="Completar mantenimiento" [disabled]="busy()" (click)="completeMaintenance(room)">
+                                <i class="pi pi-wrench"></i> Terminar
+                            </button>
+                        } @else if (room.status !== 'Occupied') {
+                            <button class="rm-act rm-act--fix" title="Solicitar mantenimiento" [disabled]="busy()" (click)="openMaintenance(room)">
+                                <i class="pi pi-wrench"></i> Mantenimiento
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- ── Modal: nueva habitación ───────────────────────── -->
+    @if (showCreate()) {
+        <div class="rm-overlay" (click)="showCreate.set(false)">
+            <div class="rm-modal" (click)="$event.stopPropagation()">
+                <div class="rm-modal__head">
+                    <h3>Nueva habitación</h3>
+                    <button class="rm-modal__x" (click)="showCreate.set(false)"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="rm-modal__body">
+                    <label class="rm-field">
+                        <span>Número</span>
+                        <input [(ngModel)]="form.roomNumber" placeholder="Ej. 101" />
+                    </label>
+                    <label class="rm-field">
+                        <span>Piso</span>
+                        <input type="number" [(ngModel)]="form.floor" min="0" />
+                    </label>
+                    <label class="rm-field">
+                        <span>Tipo de habitación</span>
+                        <select [(ngModel)]="form.roomTypeId" (ngModelChange)="onTypeChange()">
+                            @for (t of roomTypes(); track t.id) {
+                                <option [ngValue]="t.id">{{ t.name }}</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="rm-field">
+                        <span>Precio por noche (\$)</span>
+                        <input type="number" [(ngModel)]="form.price" min="0" step="0.01" />
+                    </label>
+                    <label class="rm-field">
+                        <span>Máx. huéspedes</span>
+                        <input type="number" [(ngModel)]="form.maxOccupancy" min="1" />
+                    </label>
+                    <label class="rm-field rm-field--full">
+                        <span>Descripción (opcional)</span>
+                        <textarea [(ngModel)]="form.description" rows="2" placeholder="Vista al jardín, balcón…"></textarea>
+                    </label>
+                </div>
+                <div class="rm-modal__foot">
+                    <button class="rm-btn rm-btn--ghost" (click)="showCreate.set(false)">Cancelar</button>
+                    <button class="rm-btn rm-btn--primary" [disabled]="!form.roomNumber.trim() || !form.roomTypeId" (click)="submitCreate()">
+                        Crear habitación
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── Modal: solicitar mantenimiento ────────────────── -->
+    @if (showMaintenance()) {
+        <div class="rm-overlay" (click)="showMaintenance.set(false)">
+            <div class="rm-modal" (click)="$event.stopPropagation()">
+                <div class="rm-modal__head">
+                    <h3>Mantenimiento · habitación {{ maintenanceRoom()?.roomNumber }}</h3>
+                    <button class="rm-modal__x" (click)="showMaintenance.set(false)"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="rm-modal__body">
+                    <label class="rm-field">
+                        <span>Prioridad</span>
+                        <select [(ngModel)]="maint.priority">
+                            <option value="Low">Baja</option>
+                            <option value="Medium">Media</option>
+                            <option value="High">Alta</option>
+                            <option value="Critical">Crítica</option>
+                        </select>
+                    </label>
+                    <label class="rm-field rm-field--full">
+                        <span>Descripción del problema</span>
+                        <textarea [(ngModel)]="maint.description" rows="3" placeholder="Aire acondicionado no enfría…"></textarea>
+                    </label>
+                </div>
+                <div class="rm-modal__foot">
+                    <button class="rm-btn rm-btn--ghost" (click)="showMaintenance.set(false)">Cancelar</button>
+                    <button class="rm-btn rm-btn--primary" [disabled]="!maint.description.trim()" (click)="submitMaintenance()">
+                        Solicitar
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>

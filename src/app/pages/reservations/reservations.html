@@ -1,0 +1,300 @@
+<div class="rv-page">
+
+    <!-- ── Cabecera ─────────────────────────────────────── -->
+    <div class="rv-head">
+        <div>
+            <h1 class="rv-head__title">Reservaciones</h1>
+            <p class="rv-head__sub">{{ hotelName() }}</p>
+        </div>
+        <div class="rv-head__actions">
+            @if (msg()) {
+                <span class="rv-toast" [class.rv-toast--err]="msgError()">
+                    <i class="pi" [class.pi-check-circle]="!msgError()" [class.pi-exclamation-circle]="msgError()"></i>
+                    {{ msg() }}
+                </span>
+            }
+            <button class="rv-btn rv-btn--primary" [disabled]="busy()" (click)="openCreate()">
+                <i class="pi pi-plus"></i> Nueva reserva
+            </button>
+        </div>
+    </div>
+
+    @if (loading()) {
+        <div class="rv-panel rv-skel">
+            <div class="rv-row rv-row--skel"></div>
+            <div class="rv-row rv-row--skel"></div>
+            <div class="rv-row rv-row--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="rv-panel rv-empty">
+            <div class="rv-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+            <h3>{{ error() }}</h3>
+            <button class="rv-btn rv-btn--ghost" (click)="retry()"><i class="pi pi-refresh"></i> Reintentar</button>
+        </div>
+    } @else {
+
+        <!-- KPIs -->
+        <div class="rv-kpis">
+            <button class="rv-kpi rv-kpi--pick" [class.rv-kpi--on]="filterStatus() === 'Confirmed'" (click)="setFilter('Confirmed')">
+                <span class="rv-kpi__label">Confirmadas</span>
+                <span class="rv-kpi__value">{{ counts().confirmed }}</span>
+            </button>
+            <button class="rv-kpi rv-kpi--pick" [class.rv-kpi--on]="filterStatus() === 'CheckedIn'" (click)="setFilter('CheckedIn')">
+                <span class="rv-kpi__label">En casa</span>
+                <span class="rv-kpi__value">{{ counts().checkedIn }}</span>
+            </button>
+            <button class="rv-kpi rv-kpi--pick" [class.rv-kpi--on]="filterStatus() === 'Pending'" (click)="setFilter('Pending')">
+                <span class="rv-kpi__label">Pendientes</span>
+                <span class="rv-kpi__value">{{ counts().pending }}</span>
+            </button>
+            <button class="rv-kpi rv-kpi--pick" [class.rv-kpi--on]="filterStatus() === 'CheckedOut'" (click)="setFilter('CheckedOut')">
+                <span class="rv-kpi__label">Salidas</span>
+                <span class="rv-kpi__value">{{ counts().checkedOut }}</span>
+            </button>
+            <button class="rv-kpi rv-kpi--pick" [class.rv-kpi--on]="filterStatus() === 'Cancelled'" (click)="setFilter('Cancelled')">
+                <span class="rv-kpi__label">Canceladas</span>
+                <span class="rv-kpi__value">{{ counts().cancelled }}</span>
+            </button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="rv-toolbar">
+            <div class="rv-pills">
+                @for (s of statusOptions; track s) {
+                    <button class="rv-pill" [class.rv-pill--on]="filterStatus() === s" (click)="setFilter(s)">{{ s === 'Todos' ? 'Todas' : statusLabel(s) }}</button>
+                }
+            </div>
+            <div class="rv-search">
+                <i class="pi pi-search"></i>
+                <input [(ngModel)]="search" placeholder="Buscar nº, huésped, habitación…" />
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        @if (!filtered().length) {
+            <div class="rv-panel rv-empty">
+                <div class="rv-empty__icon"><i class="pi pi-calendar"></i></div>
+                <h3>Sin reservas que coincidan</h3>
+                @if (!reservations().length) {
+                    <p>No hay reservas en {{ hotelName() }} todavía. Crea la primera.</p>
+                }
+            </div>
+        } @else {
+            <div class="rv-panel rv-table">
+                <div class="rv-table__head">
+                    <div class="rv-c rv-c--ref">Reserva</div>
+                    <div class="rv-c rv-c--guest">Huésped</div>
+                    <div class="rv-c rv-c--room">Habitación</div>
+                    <div class="rv-c rv-c--date">Llegada</div>
+                    <div class="rv-c rv-c--date">Salida</div>
+                    <div class="rv-c rv-c--num">Noches</div>
+                    <div class="rv-c rv-c--status">Estado</div>
+                    <div class="rv-c rv-c--num">Total</div>
+                    <div class="rv-c rv-c--acts">Acciones</div>
+                </div>
+                @for (r of filtered(); track r.id) {
+                    <div class="rv-table__row" [class.rv-table__row--muted]="r.status === 'Cancelled'">
+                        <div class="rv-c rv-c--ref">
+                            <span class="rv-ref">{{ r.reservationNumber }}</span>
+                            @if (r.source !== 'Directo') { <span class="rv-hint">{{ r.source }}</span> }
+                        </div>
+                        <div class="rv-c rv-c--guest">
+                            <span class="rv-guest">{{ r.guestName }}</span>
+                            <span class="rv-hint">{{ r.guestEmail }}</span>
+                            <span class="rv-hint">{{ r.numberOfGuests }} hués. · {{ r.isFullyPaid ? 'Pagada' : 'Saldo \$' + (r.balanceDue | number:'1.2-2') }}</span>
+                        </div>
+                        <div class="rv-c rv-c--room">
+                            <span class="rv-roomnum">{{ r.roomNumber }}</span>
+                            <span class="rv-hint">{{ r.roomTypeName }}</span>
+                            @if (r.hasExtraBed) { <span class="rv-hint rv-hint--bed"><i class="pi pi-briefcase"></i> cama extra</span> }
+                        </div>
+                        <div class="rv-c rv-c--date">{{ fmtDate(r.checkInDate) }}</div>
+                        <div class="rv-c rv-c--date">{{ fmtDate(r.checkOutDate) }}</div>
+                        <div class="rv-c rv-c--num">{{ r.numberOfNights }}</div>
+                        <div class="rv-c rv-c--status">
+                            <span class="rv-badge rv-{{ statusClass(r.status) }}">{{ statusLabel(r.status) }}</span>
+                        </div>
+                        <div class="rv-c rv-c--num rv-price">{{ fmtMoney(r.totalAmount) }}</div>
+                        <div class="rv-c rv-c--acts">
+                            @if (r.status === 'Pending') {
+                                <button class="rv-act rv-act--ok" [disabled]="busy()" title="Confirmar" (click)="confirm(r)"><i class="pi pi-check"></i> Confirmar</button>
+                            }
+                            @if (r.status === 'Confirmed') {
+                                <button class="rv-act rv-act--ok" [disabled]="busy()" title="Registrar llegada" (click)="checkIn(r)"><i class="pi pi-sign-in"></i> Check-in</button>
+                            }
+                            @if (r.status === 'CheckedIn') {
+                                <button class="rv-act rv-act--fix" [disabled]="busy()" title="Registrar salida" (click)="checkOut(r)"><i class="pi pi-sign-out"></i> Check-out</button>
+                            }
+                            @if (r.status === 'Confirmed' || r.status === 'Pending' || r.status === 'CheckedIn') {
+                                <button class="rv-act rv-act--warn" [disabled]="busy()" title="Cancelar reserva" (click)="openCancel(r)"><i class="pi pi-times"></i> Cancelar</button>
+                            }
+                            @if (r.specialRequests) {
+                                <span class="rv-note" title="{{ r.specialRequests }}"><i class="pi pi-comment"></i></span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Paginación -->
+        @if (reservations().length && pageInfo() > 1) {
+            <div class="rv-pager">
+                <button class="rv-btn rv-btn--ghost" [disabled]="page() <= 1" (click)="goPage(-1)"><i class="pi pi-chevron-left"></i> Anterior</button>
+                <span class="rv-pager__info">Página {{ page() }} de {{ pageInfo() }} · {{ totalCount() }} reservas</span>
+                <button class="rv-btn rv-btn--ghost" [disabled]="page() >= pageInfo()" (click)="goPage(1)">Siguiente <i class="pi pi-chevron-right"></i></button>
+            </div>
+        }
+    }
+
+    <!-- ── Modal: nueva reserva ──────────────────────────── -->
+    @if (showCreate()) {
+        <div class="rv-overlay" (click)="showCreate.set(false)">
+            <div class="rv-modal rv-modal--wide" (click)="$event.stopPropagation()">
+                <div class="rv-modal__head">
+                    <h3>Nueva reserva · {{ hotelName() }}</h3>
+                    <button class="rv-modal__x" (click)="showCreate.set(false)"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="rv-modal__body">
+                    <div class="rv-form-grid">
+                        <div class="rv-section">
+                            <span class="rv-section__title">Estancia</span>
+                            <label class="rv-field">
+                                <span>Llegada</span>
+                                <input type="date" [(ngModel)]="form.checkIn" (ngModelChange)="onDatesChanged()" />
+                            </label>
+                            <label class="rv-field">
+                                <span>Salida</span>
+                                <input type="date" [(ngModel)]="form.checkOut" (ngModelChange)="onDatesChanged()" />
+                            </label>
+                            <label class="rv-field">
+                                <span>Huéspedes</span>
+                                <input type="number" [(ngModel)]="form.numberOfGuests" min="1" max="99" />
+                            </label>
+                            <label class="rv-field">
+                                <span>Origen</span>
+                                <select [(ngModel)]="form.source">
+                                    <option value="Directo">Directo</option>
+                                    <option value="OTA">OTA</option>
+                                    <option value="Agencia">Agencia</option>
+                                    <option value="Walk-in">Walk-in</option>
+                                </select>
+                            </label>
+                            <label class="rv-field rv-field--full rv-check">
+                                <input type="checkbox" [(ngModel)]="form.hasExtraBed" />
+                                <span>Cama extra <em>+15% por noche</em></span>
+                            </label>
+                        </div>
+
+                        <div class="rv-section">
+                            <span class="rv-section__title">Huésped</span>
+                            <label class="rv-field">
+                                <span>Nombre *</span>
+                                <input [(ngModel)]="form.guestFirstName" placeholder="Nombre" />
+                            </label>
+                            <label class="rv-field">
+                                <span>Apellidos</span>
+                                <input [(ngModel)]="form.guestLastName" placeholder="Apellidos" />
+                            </label>
+                            <label class="rv-field">
+                                <span>Email</span>
+                                <input [(ngModel)]="form.guestEmail" placeholder="correo@ejemplo.com" />
+                            </label>
+                            <label class="rv-field">
+                                <span>Teléfono</span>
+                                <input [(ngModel)]="form.guestPhone" placeholder="+34…" />
+                            </label>
+                            <div class="rv-field rv-field--split">
+                                <label class="rv-field">
+                                    <span>Tipo doc.</span>
+                                    <select [(ngModel)]="form.guestDocumentType">
+                                        <option>DNI</option>
+                                        <option>Pasaporte</option>
+                                        <option>NIE</option>
+                                        <option>Otro</option>
+                                    </select>
+                                </label>
+                                <label class="rv-field">
+                                    <span>Nº documento</span>
+                                    <input [(ngModel)]="form.guestDocumentNumber" placeholder="00000000A" />
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="rv-section">
+                            <span class="rv-section__title">Habitación</span>
+                            <label class="rv-field">
+                                <span>Tipo</span>
+                                <select [ngModel]="form.roomTypeId" (ngModelChange)="selectType($event)">
+                                    <option [ngValue]="null">Todos</option>
+                                    @for (t of roomTypes(); track t.id) {
+                                        <option [ngValue]="t.id">{{ t.name }}</option>
+                                    }
+                                </select>
+                            </label>
+                            <label class="rv-field">
+                                <span>Habitación *</span>
+                                <select [(ngModel)]="form.roomId">
+                                    <option [ngValue]="''" disabled>{{ loadingRooms() ? 'Cargando…' : 'Selecciona una habitación' }}</option>
+                                    @for (room of availableRooms(); track room.id) {
+                                        <option [ngValue]="room.id">{{ room.roomNumber }} · {{ room.roomTypeName }} · \${{ room.price | number:'1.2-2' }} ({{ room.maxOccupancy }} hués.)</option>
+                                    }
+                                </select>
+                            </label>
+                            @if (availableRooms().length) {
+                                <label class="rv-field rv-field--split">
+                                    <span>Tarifa por noche</span>
+                                    <span class="rv-field__static">\${{ selectedRoomPrice() | number:'1.2-2' }}</span>
+                                </label>
+                            }
+                            @if (!loadingRooms() && form.checkIn && form.checkOut && !availableRooms().length) {
+                                <span class="rv-field__warn"><i class="pi pi-exclamation-circle"></i> No hay habitaciones disponibles en esas fechas.</span>
+                            }
+                            <label class="rv-field rv-field--full">
+                                <span>Peticiones especiales</span>
+                                <textarea [(ngModel)]="form.specialRequests" rows="2" placeholder="Cuna, vistas, late check-out…"></textarea>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="rv-modal__foot">
+                    <button class="rv-btn rv-btn--ghost" (click)="showCreate.set(false)">Cancelar</button>
+                    <button class="rv-btn rv-btn--primary" [disabled]="!canCreate()" (click)="submitCreate()">
+                        <i class="pi pi-calendar-plus"></i> Crear reserva
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── Modal: cancelar ───────────────────────────────── -->
+    @if (showCancel()) {
+        <div class="rv-overlay" (click)="showCancel.set(false)">
+            <div class="rv-modal" (click)="$event.stopPropagation()">
+                <div class="rv-modal__head">
+                    <h3>Cancelar reserva {{ cancelTarget()?.reservationNumber }}</h3>
+                    <button class="rv-modal__x" (click)="showCancel.set(false)"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="rv-modal__body">
+                    <p class="rv-modal__text">
+                        Se cancelará la reserva de <strong>{{ cancelTarget()?.guestName }}</strong> en la habitación
+                        <strong>{{ cancelTarget()?.roomNumber }}</strong> ({{ fmtDate(cancelTarget()?.checkInDate ?? '') }} → {{ fmtDate(cancelTarget()?.checkOutDate ?? '') }}).
+                        @if (cancelTarget()?.status === 'CheckedIn') {
+                            La habitación quedará marcada como sucia.
+                        }
+                    </p>
+                    <label class="rv-field">
+                        <span>Motivo (opcional)</span>
+                        <input [(ngModel)]="cancelReason" placeholder="Cambio de planes, no-show…" />
+                    </label>
+                </div>
+                <div class="rv-modal__foot">
+                    <button class="rv-btn rv-btn--ghost" (click)="showCancel.set(false)">Volver</button>
+                    <button class="rv-btn rv-btn--danger" [disabled]="busy()" (click)="submitCancel()">
+                        <i class="pi pi-times"></i> Cancelar reserva
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>

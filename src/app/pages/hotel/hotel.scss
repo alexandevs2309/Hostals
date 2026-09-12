@@ -1,0 +1,177 @@
+.rm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid #0369a1;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.rm-btn--primary {
+    background: #0369a1;
+    color: #fff;
+}
+
+.rm-btn--ghost {
+    background: transparent;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+
+.rm-btn--ghost:hover {
+    background: #f1f5f9;
+}
+
+.rm-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.25rem;
+}
+
+/* ── Vista ──────────────────────────────────────────── */
+.ht-view__hero {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.ht-view__ava {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #0ea5e9, #0369a1);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+}
+
+.ht-view__name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.ht-view__sub {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin: 0.1rem 0 0.35rem;
+}
+
+.ht-view__stars {
+    color: #f59e0b;
+    font-size: 0.8rem;
+}
+
+.ht-view__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem 1.5rem;
+    padding: 1.1rem 0;
+}
+
+.ht-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.ht-item--full {
+    grid-column: 1 / -1;
+}
+
+.ht-item__label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+}
+
+.ht-item__value {
+    font-size: 0.95rem;
+    color: #0f172a;
+    font-weight: 500;
+}
+
+.ht-item__value a {
+    color: #0369a1;
+    text-decoration: none;
+}
+
+.ht-modules {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.15rem;
+}
+
+.ht-chip {
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+}
+
+.ht-view__foot {
+    border-top: 1px solid #f1f5f9;
+    padding-top: 0.8rem;
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+/* ── Formulario ─────────────────────────────────────── */
+.ht-form__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 0.9rem 1.2rem;
+}
+
+.ht-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.ht-field--full {
+    grid-column: 1 / -1;
+}
+
+.ht-field > span {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.ht-field input,
+.ht-field select {
+    padding: 0.5rem 0.65rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #0f172a;
+    background: #fff;
+}
+
+.ht-field input:focus,
+.ht-field select:focus {
+    outline: 2px solid #0369a1;
+    outline-offset: -1px;
+    border-color: #0369a1;
+}
+
+.ht-form__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1.2rem;
+}

@@ -1,0 +1,105 @@
+<div class="hk-page">
+
+    <div class="hk-head">
+        <div>
+            <h1 class="hk-head__title">Housekeeping</h1>
+            <p class="hk-head__sub">{{ hotelName() }}</p>
+        </div>
+        @if (msg()) {
+            <span class="hk-toast" [class.hk-toast--err]="msgError()">
+                <i class="pi" [class.pi-check-circle]="!msgError()" [class.pi-exclamation-circle]="msgError()"></i>
+                {{ msg() }}
+            </span>
+        }
+    </div>
+
+    @if (loading()) {
+        <div class="hk-panel hk-skel">
+            <div class="hk-row hk-row--skel"></div>
+            <div class="hk-row hk-row--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="hk-panel hk-empty">
+            <div class="hk-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+            <h3>{{ error() }}</h3>
+            <button class="hk-btn" (click)="retry()"><i class="pi pi-refresh"></i> Reintentar</button>
+        </div>
+    } @else {
+
+        <!-- KPIs -->
+        <div class="hk-kpis">
+            <div class="hk-kpi hk-kpi--ok">
+                <span class="hk-kpi__label">Limpias</span>
+                <span class="hk-kpi__value">{{ hk()?.clean ?? 0 }}</span>
+            </div>
+            <div class="hk-kpi hk-kpi--dirty">
+                <span class="hk-kpi__label">Pendientes</span>
+                <span class="hk-kpi__value">{{ hk()?.pending ?? 0 }}</span>
+            </div>
+            <div class="hk-kpi hk-kpi--warn">
+                <span class="hk-kpi__label">Inspección</span>
+                <span class="hk-kpi__value">{{ hk()?.inspection ?? 0 }}</span>
+            </div>
+            <div class="hk-kpi hk-kpi--fix">
+                <span class="hk-kpi__label">Mantenimiento</span>
+                <span class="hk-kpi__value">{{ hk()?.maintenance ?? 0 }}</span>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="hk-pills">
+            <button class="hk-pill" [class.hk-pill--on]="filter() === 'todas'" (click)="setFilter('todas')">Todas</button>
+            <button class="hk-pill" [class.hk-pill--on]="filter() === 'dirty'" (click)="setFilter('dirty')">Sucias</button>
+            <button class="hk-pill" [class.hk-pill--on]="filter() === 'clean'" (click)="setFilter('clean')">Limpias</button>
+        </div>
+
+        <!-- Lista -->
+        @if (!filtered().length) {
+            <div class="hk-panel hk-empty">
+                <div class="hk-empty__icon"><i class="pi pi-sparkles"></i></div>
+                <h3>Sin habitaciones</h3>
+                <p>No hay habitaciones con ese estado todavía.</p>
+            </div>
+        } @else {
+            <div class="hk-panel hk-table">
+                <div class="hk-table__head">
+                    <div class="hk-c hk-c--room">Habitación</div>
+                    <div class="hk-c hk-c--type">Tipo</div>
+                    <div class="hk-c hk-c--num">Piso</div>
+                    <div class="hk-c hk-c--clean">Limpieza</div>
+                    <div class="hk-c hk-c--state">Estado</div>
+                    <div class="hk-c hk-c--acts">Acciones</div>
+                </div>
+                @for (room of filtered(); track room.id) {
+                    <div class="hk-table__row">
+                        <div class="hk-c hk-c--room"><span class="hk-roomnum">{{ room.roomNumber }}</span></div>
+                        <div class="hk-c hk-c--type">{{ room.roomTypeName || '—' }}</div>
+                        <div class="hk-c hk-c--num">Nivel {{ room.floor }}</div>
+                        <div class="hk-c hk-c--clean">
+                            <span class="hk-clean" [class.hk-clean--dirty]="!room.isClean">
+                                <i class="pi" [class.pi-check-circle]="room.isClean" [class.pi-times-circle]="!room.isClean"></i>
+                                {{ room.isClean ? 'Limpia' : 'Sucio' }}
+                            </span>
+                        </div>
+                        <div class="hk-c hk-c--state">
+                            <span class="hk-badge">{{ room.status }}</span>
+                            @if (room.isMaintenanceRequired) { <i class="pi pi-wrench hk-wrench" title="Requiere mantenimiento"></i> }
+                        </div>
+                        <div class="hk-c hk-c--acts">
+                            @if (!room.isClean && room.status !== 'Occupied') {
+                                <button class="hk-act hk-act--ok" [disabled]="busy()" (click)="markClean(room)">
+                                    <i class="pi pi-check-square"></i> Limpiar
+                                </button>
+                            }
+                            @if (room.isClean && room.status !== 'Occupied') {
+                                <button class="hk-act hk-act--warn" [disabled]="busy()" (click)="markDirty(room)">
+                                    <i class="pi pi-inbox"></i> Sucio
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>

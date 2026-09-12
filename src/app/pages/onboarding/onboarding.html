@@ -1,0 +1,208 @@
+<div class="onboarding">
+    <header class="page-header">
+        <div class="title">
+            <h1>Puesta en marcha</h1>
+            <span class="subtitle">{{ hotelName() }} · {{ progressLabel() }} pasos completados</span>
+        </div>
+    </header>
+
+    @if (msg()) {
+        <div [class]="'toast ' + (msgError() ? 'toast--error' : 'toast--ok')">
+            {{ msg() }} <button class="toast-close" (click)="msg.set('')">×</button>
+        </div>
+    }
+
+    @if (loading()) {
+        <div class="center-box"><i class="pi pi-spin pi-spinner"></i> Cargando estado…</div>
+    } @else if (error()) {
+        <div class="empty">
+            <p>{{ error() }}</p>
+            <button class="btn" (click)="retry()">Reintentar</button>
+        </div>
+    } @else {
+        <div class="wizard">
+            <aside class="rail">
+                @for (s of steps; track s.n) {
+                    <button class="rail-item" [class.active]="step() === s.n" (click)="goStep(s.n)">
+                        <span class="rail-icon" [class.done]="isDone(s.n)">
+                            @if (isDone(s.n)) { <i class="pi pi-check"></i> } @else { <i [class]="'pi ' + s.icon"></i> }
+                        </span>
+                        <span class="rail-text">
+                            <b>Paso {{ s.n }}</b>
+                            <small>{{ s.title }}</small>
+                        </span>
+                    </button>
+                }
+                <div class="rail-footer">
+                    @if (canFinish()) {
+                        <i class="pi pi-check-circle" style="color:#16a34a"></i> Todo listo
+                    } @else {
+                        <i class="pi pi-clock"></i> En progreso
+                    }
+                </div>
+            </aside>
+
+            <section class="stage">
+                <!-- Paso 1: Propiedad -->
+                @if (step() === 1) {
+                    @let st = status();
+                    <h2>Datos de la propiedad</h2>
+                    <div class="cards">
+                        <div class="card">
+                            <i class="pi pi-building"></i>
+                            <b>{{ st?.hotelName }}</b>
+                            <small>Nombre de la propiedad</small>
+                        </div>
+                        <div class="card">
+                            <i class="pi pi-dollar"></i>
+                            <b>{{ st?.currency }}</b>
+                            <small>Moneda de facturación</small>
+                        </div>
+                        <div class="card">
+                            <i class="pi pi-percentage"></i>
+                            <b>{{ st?.taxRate ?? 0 }}%</b>
+                            <small>Impuesto (ITBIS)</small>
+                        </div>
+                    </div>
+                    <p class="hint">La propiedad ya está creada. Revisa la información en <b>Configuración</b> cuando lo necesites.</p>
+                    <div class="row-actions">
+                        <button class="btn primary" (click)="next()">Continuar →</button>
+                    </div>
+                }
+
+                <!-- Paso 2: Tipos y habitaciones -->
+                @if (step() === 2) {
+                    <h2>Tipos de habitación</h2>
+                    <div class="list">
+                        @for (t of roomTypes(); track t.id) {
+                            <div class="list-row">
+                                <div>
+                                    <b>{{ t.name }}</b>
+                                    <small>Capacidad {{ t.maxOccupancy }} · {{ fmtMoney(t.basePrice) }}</small>
+                                </div>
+                                <button class="btn ghost small" (click)="removeType(t)"><i class="pi pi-trash"></i></button>
+                            </div>
+                        }
+                        @if (roomTypes().length === 0) {
+                            <div class="empty small">Aún no hay tipos definidos. Crea el primero.</div>
+                        }
+                    </div>
+                    <div class="row-actions">
+                        <button class="btn ghost" (click)="openTypeForm()"><i class="pi pi-plus"></i> Agregar tipo</button>
+                        <button class="btn" [routerLink]="['/app/rooms']">Agregar habitaciones <i class="pi pi-external-link"></i></button>
+                        <span class="count-pill"><i class="pi pi-bed"></i> {{ status()?.roomCount ?? 0 }} habitaciones</span>
+                        <button class="btn primary" (click)="next()">Continuar →</button>
+                    </div>
+
+                    @if (showTypeForm()) {
+                        <div class="overlay" (click)="showTypeForm.set(false)">
+                            <div class="overlay-card" (click)="$event.stopPropagation()">
+                                <h3>Nuevo tipo de habitación</h3>
+                                <label>Nombre
+                                    <input [(ngModel)]="typeForm.name" placeholder="Ej. Junior" />
+                                </label>
+                                <label>Precio base ({{ status()?.currency }})
+                                    <input type="number" [(ngModel)]="typeForm.basePrice" min="0" />
+                                </label>
+                                <label>Capacidad (personas)
+                                    <input type="number" [(ngModel)]="typeForm.capacity" min="1" />
+                                </label>
+                                <div class="overlay-actions">
+                                    <button class="btn ghost" (click)="showTypeForm.set(false)">Cancelar</button>
+                                    <button class="btn primary" (click)="saveType()">Guardar</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+
+                <!-- Paso 3: Tarifas y políticas -->
+                @if (step() === 3) {
+                    <h2>Tarifas y políticas</h2>
+                    @let st3 = status();
+                    <div class="cards">
+                        <div class="card">
+                            <i class="pi pi-tag"></i>
+                            <b>{{ st3?.ratePlanCount ?? 0 }}</b>
+                            <small>Planes de tarifa</small>
+                        </div>
+                        <div class="card">
+                            <i class="pi pi-calendar"></i>
+                            <b>{{ st3?.roomTypeCount ?? 0 }}</b>
+                            <small>Tipos con tarifa</small>
+                        </div>
+                    </div>
+                    @if (!(st3?.hasRatePlan)) {
+                        <p class="hint">Sin planes todavía. Crea un plan flexible por defecto o configura tus propias tarifas.</p>
+                    } @else {
+                        <p class="hint">Ya tienes planes o tarifas definidos. Puedes ajustarlos desde <b>Tarifas</b>.</p>
+                    }
+                    <div class="row-actions">
+                        <button class="btn" (click)="createDefaultPlan()">
+                            <i class="pi pi-magic"></i> Crear plan flexible por defecto
+                        </button>
+                        <button class="btn" [routerLink]="['/app/rates']">Abrir motor de tarifas <i class="pi pi-external-link"></i></button>
+                        <button class="btn primary" (click)="next()">Continuar →</button>
+                    </div>
+                }
+
+                <!-- Paso 4: Canales -->
+                @if (step() === 4) {
+                    <h2>Canales de venta</h2>
+                    <div class="list">
+                        @for (c of channels(); track c.id) {
+                            <div class="list-row">
+                                <div>
+                                    <b>{{ c.name }}</b>
+                                    <small>{{ c.channelTypeLabel }} · comisión {{ c.commissionRate }}%</small>
+                                </div>
+                                <button class="btn ghost small" (click)="removeChannel(c)"><i class="pi pi-trash"></i></button>
+                            </div>
+                        }
+                        @if (channels().length === 0) {
+                            <div class="empty small">Aún no hay canales. Agrega OTA, teléfono o walk-in.</div>
+                        }
+                    </div>
+                    <div class="row-actions">
+                        <button class="btn ghost" (click)="openChannelForm()"><i class="pi pi-plus"></i> Agregar canal</button>
+                        <button class="btn primary" (click)="prev()">← Atrás</button>
+                    </div>
+
+                    @if (showChannelForm()) {
+                        <div class="overlay" (click)="showChannelForm.set(false)">
+                            <div class="overlay-card" (click)="$event.stopPropagation()">
+                                <h3>Nuevo canal de venta</h3>
+                                <label>Nombre
+                                    <input [(ngModel)]="channelForm.name" placeholder="Ej. Booking.com" />
+                                </label>
+                                <label>Tipo
+                                    <select [(ngModel)]="channelForm.channelType">
+                                        @for (t of channelTypes; track t.value) {
+                                            <option [value]="t.value">{{ t.label }}</option>
+                                        }
+                                    </select>
+                                </label>
+                                <label>Comisión (%)
+                                    <input type="number" [(ngModel)]="channelForm.commissionRate" min="0" max="100" />
+                                </label>
+                                <div class="overlay-actions">
+                                    <button class="btn ghost" (click)="showChannelForm.set(false)">Cancelar</button>
+                                    <button class="btn primary" (click)="saveChannel()">Guardar</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+
+                @if (canFinish()) {
+                    <div class="done-card">
+                        <i class="pi pi-check-circle"></i>
+                        <h3>¡Tu propiedad está lista!</h3>
+                        <p>Todos los pasos de la puesta en marcha están completos.</p>
+                        <button class="btn primary" (click)="goDashboard()">Ir al dashboard <i class="pi pi-arrow-right"></i></button>
+                    </div>
+                }
+            </section>
+        </div>
+    }
+</div>

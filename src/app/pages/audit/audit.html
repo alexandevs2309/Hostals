@@ -1,0 +1,126 @@
+<div class="rm-page">
+
+    <!-- ── Cabecera ─────────────────────────────────────── -->
+    <div class="rm-head">
+        <div>
+            <h1 class="rm-head__title">Auditoría de seguridad</h1>
+            <p class="rm-head__sub">Eventos de acceso, registro y contraseñas del sistema</p>
+        </div>
+        <div class="rm-head__actions">
+            <button class="rm-btn rm-btn--ghost" (click)="refresh()" [disabled]="loading() || refreshing()">
+                <i class="pi" [class.pi-refresh]="!refreshing()" [class.pi-spinner]="refreshing()"></i>
+                Actualizar
+            </button>
+            @if (hasFilters()) {
+                <button class="rm-btn rm-btn--ghost" (click)="clearFilters()"><i class="pi pi-filter-slash"></i> Limpiar filtros</button>
+            }
+        </div>
+    </div>
+
+    <!-- ── Filtros ──────────────────────────────────────── -->
+    <div class="au-filters">
+        <div class="au-search">
+            <i class="pi pi-search"></i>
+            <input [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Buscar por correo, módulo o detalle…" (keyup.enter)="applyFilters()" />
+        </div>
+        <div class="au-field">
+            <span class="au-field__label">Acción</span>
+            <select [ngModel]="action()" (ngModelChange)="action.set($event)">
+                <option [ngValue]="''">Todas</option>
+                @for (a of actions; track a) {
+                    <option [ngValue]="a">{{ actionLabel(a) }}</option>
+                }
+            </select>
+        </div>
+        <div class="au-field">
+            <span class="au-field__label">Desde</span>
+            <input type="date" [ngModel]="from() | date: 'yyyy-MM-dd'" (ngModelChange)="setFrom($event)" />
+        </div>
+        <div class="au-field">
+            <span class="au-field__label">Hasta</span>
+            <input type="date" [ngModel]="to() | date: 'yyyy-MM-dd'" (ngModelChange)="setTo($event)" />
+        </div>
+        <button class="rm-btn rm-btn--primary" (click)="applyFilters()"><i class="pi pi-filter"></i> Filtrar</button>
+    </div>
+
+    <!-- ── Cuerpo ───────────────────────────────────────── -->
+    @if (loading()) {
+        <div class="rm-panel rm-skel">
+            <div class="rm-row rm-row--skel"></div>
+            <div class="rm-row rm-row--skel"></div>
+            <div class="rm-row rm-row--skel"></div>
+            <div class="rm-row rm-row--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="rm-panel rm-empty">
+            <div class="rm-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+            <h3>{{ error() }}</h3>
+            <button class="rm-btn rm-btn--ghost" (click)="refresh()"><i class="pi pi-refresh"></i> Reintentar</button>
+        </div>
+    } @else if (!items().length) {
+        <div class="rm-panel rm-empty">
+            <div class="rm-empty__icon"><i class="pi pi-history"></i></div>
+            <h3>No hay registros que coincidan</h3>
+            @if (hasFilters()) {
+                <p>Prueba a ajustar o limpiar los filtros aplicados.</p>
+                <button class="rm-btn rm-btn--ghost" (click)="clearFilters()"><i class="pi pi-filter-slash"></i> Limpiar filtros</button>
+            } @else {
+                <p>Todavía no se ha registrado ninguna actividad de autenticación.</p>
+            }
+        </div>
+    } @else {
+        <div class="rm-panel au-table">
+            <div class="au-table__head">
+                <div class="au-c au-c--when">Fecha</div>
+                <div class="au-c au-c--who">Usuario</div>
+                <div class="au-c au-c--act">Acción</div>
+                <div class="au-c au-c--mod">Módulo</div>
+                <div class="au-c au-c--ip">IP</div>
+                <div class="au-c au-c--detail">Detalle</div>
+            </div>
+            @for (e of items(); track e.id) {
+                <div class="au-table__row">
+                    <div class="au-c au-c--when">
+                        <span class="au-when">{{ fmtDate(e.createdAt) }}</span>
+                    </div>
+                    <div class="au-c au-c--who">
+                        <span class="au-avatar" [title]="e.userName || ''">{{ initials(e.userName) }}</span>
+                        <span class="au-user">{{ e.userName || '—' }}</span>
+                    </div>
+                    <div class="au-c au-c--act">
+                        <span class="au-badge au-badge--{{ actionTone(e.action) }}">
+                            <i class="pi {{ actionIcon(e.action) }}"></i>
+                            {{ actionLabel(e.action) }}
+                        </span>
+                    </div>
+                    <div class="au-c au-c--mod">
+                        <span class="au-mod">{{ e.module || '—' }}</span>
+                    </div>
+                    <div class="au-c au-c--ip">
+                        <span class="au-ip">{{ e.ipAddress || '—' }}</span>
+                    </div>
+                    <div class="au-c au-c--detail">
+                        @if (e.details) {
+                            <span class="au-detail" title="{{ e.details }}">{{ e.details }}</span>
+                        } @else {
+                            <span class="au-detail au-detail--muted">—</span>
+                        }
+                    </div>
+                </div>
+            }
+            @if (total() > pageSize) {
+                <div class="au-table__foot">
+                    <span class="au-count">{{ total() }} registros · página {{ pageNumber() }} de {{ totalPages() }}</span>
+                    <div class="au-pager">
+                        <button class="au-page" [disabled]="pageNumber() <= 1" (click)="prevPage()"><i class="pi pi-chevron-left"></i></button>
+                        <button class="au-page" [disabled]="pageNumber() * pageSize >= total()" (click)="nextPage()"><i class="pi pi-chevron-right"></i></button>
+                    </div>
+                </div>
+            } @else {
+                <div class="au-table__foot">
+                    <span class="au-count">{{ total() }} registro(s) · página {{ pageNumber() }}</span>
+                </div>
+            }
+        </div>
+    }
+</div>
