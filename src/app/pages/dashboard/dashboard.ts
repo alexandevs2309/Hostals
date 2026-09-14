@@ -1,10 +1,11 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { HotelService } from '@/app/core/services/hotel.service';
-import { DashboardService, DashboardWidgetsDto } from '@/app/core/services/dashboard.service';
+import { DashboardService, DashboardWidgetsDto, RangeAnalyticsDto } from '@/app/core/services/dashboard.service';
 import {
     HotelMetrics,
     BookingRow,
@@ -16,7 +17,7 @@ import {
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, FormsModule],
     template: `
 <div class="hos-dash">
 
@@ -298,6 +299,91 @@ import {
                         </div>
                     }
                 </div>
+                }
+            </div>
+
+            <!-- Analytics por rango (real, no mock) -->
+            <div class="hos-card">
+                <div class="hos-card__head">
+                    <span class="hos-card__title"><i class="pi pi-calendar"></i>Analytics · ventana de fechas</span>
+                    <span class="hos-tag hos-tag--up"><i class="pi pi-chart-line"></i>calculado sobre reservas reales</span>
+                </div>
+                <div class="hos-range">
+                    <label class="hos-range__lbl">Desde
+                        <input type="date" class="hos-range__input" [ngModel]="rangeFrom()" (ngModelChange)="rangeFrom.set($event)" />
+                    </label>
+                    <label class="hos-range__lbl">Hasta
+                        <input type="date" class="hos-range__input" [ngModel]="rangeTo()" (ngModelChange)="rangeTo.set($event)" />
+                    </label>
+                    <button type="button" class="hos-btn" [disabled]="rangeLoading()" (click)="loadRangeAnalytics()">
+                        <i class="pi pi-chart-line"></i> Calcular
+                    </button>
+                </div>
+                @if (rangeAnalytics(); as a) {
+                    <div class="hos-kpis hos-kpis--range">
+                        <div class="hos-kpi-card">
+                            <span class="hos-kpi-card__label">Ocupación</span>
+                            <span class="hos-kpi-card__value">{{ a.occupancyRate }}%</span>
+                            <span class="hos-kpi-card__trend">{{ a.soldNights }} de {{ a.availableNights }} noches</span>
+                        </div>
+                        <div class="hos-kpi-card">
+                            <span class="hos-kpi-card__label">ADR</span>
+                            <span class="hos-kpi-card__value">\${{ a.averageDailyRate | number }}</span>
+                            <span class="hos-kpi-card__trend">tarifa promedio por noche</span>
+                        </div>
+                        <div class="hos-kpi-card">
+                            <span class="hos-kpi-card__label">RevPAR</span>
+                            <span class="hos-kpi-card__value">\${{ a.revenuePerAvailableRoom | number }}</span>
+                            <span class="hos-kpi-card__trend">ingreso por habitación disponible</span>
+                        </div>
+                        <div class="hos-kpi-card">
+                            <span class="hos-kpi-card__label">Ingreso habitación</span>
+                            <span class="hos-kpi-card__value">\${{ a.roomRevenue | number }}</span>
+                            <span class="hos-kpi-card__trend">{{ a.days }} días · {{ a.totalRooms }} habitación(es)</span>
+                        </div>
+                    </div>
+                    @if (a.byRoomType.length) {
+                        <div class="hos-range__table-wrap">
+                            <table class="hos-range__table">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Habitaciones</th>
+                                        <th>Noches vendidas</th>
+                                        <th>Ocupación</th>
+                                        <th>ADR</th>
+                                        <th>Ingreso</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (t of a.byRoomType; track t.roomTypeName) {
+                                        <tr>
+                                            <td>{{ t.roomTypeName }}</td>
+                                            <td>{{ t.rooms }}</td>
+                                            <td>{{ t.soldNights }}</td>
+                                            <td>{{ t.occupancyRate }}%</td>
+                                            <td>\${{ t.averageDailyRate | number }}</td>
+                                            <td>\${{ t.revenue | number }}</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    @if (a.occupancySeries.length) {
+                        <div class="hos-revenue">
+                            @for (pt of a.occupancySeries; track pt.label) {
+                                <div class="hos-revenue__col">
+                                    <div class="hos-revenue__bar-wrap">
+                                        <div class="hos-revenue__bar" [style.height.%]="rangeBarPct(pt.value)"></div>
+                                    </div>
+                                    <span class="hos-revenue__lbl">{{ pt.label }}</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                } @else {
+                    <div class="hos-empty-state"><span>Ajusta el rango y pulsa Calcular para ver el reporte real.</span></div>
                 }
             </div>
 
@@ -711,6 +797,54 @@ import {
             .hos-table__row span:nth-child(3),
             .hos-table__row span:nth-child(4) { display: none; }
         }
+
+        .hos-kpis--range { grid-template-columns: repeat(4, 1fr); }
+        .hos-range {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .hos-range__lbl {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-color-secondary);
+        }
+        .hos-range__input {
+            padding: 8px 10px;
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            background: var(--surface-card);
+            color: var(--text-color);
+            font: inherit;
+            font-size: 0.85rem;
+        }
+        .hos-range__table-wrap { overflow-x: auto; margin-top: 0.75rem; }
+        .hos-range__table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        .hos-range__table th,
+        .hos-range__table td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--surface-border);
+        }
+        .hos-range__table th {
+            font-weight: 700;
+            color: var(--text-color-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: 0.68rem;
+        }
+        @media (max-width: 900px) {
+            .hos-kpis--range { grid-template-columns: repeat(2, 1fr); }
+        }
     `]
 })
 export class Dashboard implements OnInit, OnDestroy {
@@ -733,13 +867,18 @@ export class Dashboard implements OnInit, OnDestroy {
     error = signal<string | null>(null);
 
     metrics = signal<HotelMetrics>({ rooms: 0, occupancy: 0, revenue: 0, checkIns: 0, availableRooms: 0, adr: 0, revpar: 0 });
-    kpis = signal<Record<string, number>>({});
+    kpis = signal<Record<string, number | undefined>>({});
     bookings = signal<BookingRow[]>([]);
     housekeeping = signal<HousekeepingRoom[]>([]);
     tickets = signal<MaintenanceTicket[]>([]);
     occupancy = signal<ChartPoint[]>([]);
     revenue = signal<ChartPoint[]>([]);
     hkCounts = signal({ clean: 0, pending: 0, inspection: 0, maintenance: 0 });
+
+    rangeFrom = signal('');
+    rangeTo = signal('');
+    rangeLoading = signal(false);
+    rangeAnalytics = signal<RangeAnalyticsDto | null>(null);
 
     private timer?: ReturnType<typeof setInterval>;
 
@@ -779,6 +918,14 @@ export class Dashboard implements OnInit, OnDestroy {
             this.loading.set(false);
             this.refreshing.set(false);
             return;
+        }
+        if (!this.rangeFrom()) {
+            const today = new Date();
+            const from = new Date();
+            from.setDate(from.getDate() - 29);
+            this.rangeFrom.set(this.toIso(from));
+            this.rangeTo.set(this.toIso(today));
+            this.loadRangeAnalytics();
         }
         this.error.set(null);
         forkJoin({
@@ -932,5 +1079,30 @@ export class Dashboard implements OnInit, OnDestroy {
         const max = Math.max(...this.revenue().map(r => r.value));
         if (max <= 0) return 0;
         return Math.max(3, Math.round((value / max) * 100));
+    }
+
+    private toIso(d: Date): string {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    loadRangeAnalytics(): void {
+        if (!this.rangeFrom() || !this.rangeTo()) {
+            return;
+        }
+        this.rangeLoading.set(true);
+        this.dashboard.getRangeAnalytics(this.rangeFrom(), this.rangeTo())
+            .pipe(catchError(() => of(null)))
+            .subscribe({
+                next: (r) => this.rangeAnalytics.set(r),
+                error: () => this.rangeLoading.set(false),
+                complete: () => this.rangeLoading.set(false)
+            });
+    }
+
+    rangeBarPct(value: number): number {
+        const a = this.rangeAnalytics();
+        const max = Math.max(...(a?.occupancySeries ?? []).map((p) => p.value));
+        if (max <= 0) return 0;
+        return Math.max(4, Math.round((value / max) * 100));
     }
 }

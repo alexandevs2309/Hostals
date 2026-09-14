@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { map } from 'rxjs';
@@ -122,6 +122,7 @@ export class AppTopbar implements OnInit {
 
     private readonly auth = inject(AuthService);
     private readonly hotels = inject(HotelService);
+    private readonly cdr = inject(ChangeDetectorRef);
 
     ngOnInit(): void {
         this.auth.currentUser$.subscribe((user) => {
@@ -137,6 +138,7 @@ export class AppTopbar implements OnInit {
         hotels$.subscribe({
             next: (hotel) => {
                 this.propertyName = hotel?.name ?? '';
+                this.cdr.markForCheck();
             }
         });
     }

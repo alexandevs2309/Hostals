@@ -21,6 +21,9 @@ import { GuestsPage } from './app/pages/guests/guests';
 import { FinancePage } from './app/pages/finance/finance';
 import { RatesPage } from './app/pages/rates/rates';
 import { OnboardingPage } from './app/pages/onboarding/onboarding';
+import { ChannelsPage } from './app/pages/channels/channels';
+import { WorkflowsPage } from './app/pages/workflows/workflows';
+import { OrganizationPage } from './app/pages/organization/organization';
 
 export const appRoutes: Routes = [
     ...MARKETING_ROUTES,
@@ -36,6 +39,9 @@ export const appRoutes: Routes = [
             { path: 'rooms',        component: RoomsPage },
             { path: 'rates',        component: RatesPage },
             { path: 'onboarding',   component: OnboardingPage },
+            { path: 'channels',     component: ChannelsPage },
+            { path: 'workflows',    component: WorkflowsPage },
+            { path: 'organization', component: OrganizationPage, data: { roles: ['Admin'] }, canActivate: [roleGuard] },
             { path: 'guests',       component: GuestsPage },
             { path: 'housekeeping', component: HousekeepingPage },
             { path: 'maintenance',  component: MaintenancePage },

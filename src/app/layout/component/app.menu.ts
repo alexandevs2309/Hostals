@@ -4,6 +4,7 @@ import { RouterModule, RouterLinkActive, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { LayoutService } from '@/app/layout/service/layout.service';
 import { AuthService, User } from '@/app/core/services/auth.service';
+import { OrganizationService, UserProperty } from '@/app/core/services/organization.service';
 import { HotelService, Hotel } from '@/app/core/services/hotel.service';
 import { Role, hasAnyRole } from '@/app/core/auth/roles';
 
@@ -20,6 +21,8 @@ interface HosNavItem {
 const HOTEL_NAV: HosNavItem[] = [
     { label: 'Dashboard',      icon: 'pi pi-th-large',    route: '/app'                },
     { label: 'Puesta en marcha', icon: 'pi pi-rocket',    route: '/app/onboarding'     },
+    { label: 'Canales y ventas', icon: 'pi pi-globe',     route: '/app/channels'      },
+    { label: 'Automatización',  icon: 'pi pi-bolt',       route: '/app/workflows'     },
     { separator: true,         label: 'Operación',        icon: '' },
     { label: 'Reservaciones',  icon: 'pi pi-calendar',    route: '/app/reservations'  },
     { label: 'Habitaciones',   icon: 'pi pi-building',    route: '/app/rooms'         },
@@ -32,6 +35,7 @@ const HOTEL_NAV: HosNavItem[] = [
     { label: 'Analytics',      icon: 'pi pi-chart-line',  route: '/app/analytics',     roles: ['Admin', 'Manager'] },
     { separator: true,         label: 'Mi cuenta',        icon: '' },
     { label: 'Seguridad',      icon: 'pi pi-shield',      route: '/app/security' },
+    { label: 'Organización',   icon: 'pi pi-sitemap',     route: '/app/organization', roles: ['Admin'] },
     { separator: true,         label: 'Sistema',          icon: '' },
     { label: 'Auditoría',      icon: 'pi pi-history',     route: '/app/audit',        roles: ['Admin'] },
     { label: 'Configuración',  icon: 'pi pi-cog',         route: '/app/settings',      roles: ['Admin'] },
@@ -60,7 +64,28 @@ const HOTEL_NAV: HosNavItem[] = [
                     <span class="hos-nav__property-name">{{ propertyName }}</span>
                     <span class="hos-nav__property-sub">{{ propertySub }}</span>
                 </div>
+                @if (properties.length > 1) {
+                    <button class="hos-nav__property-btn" type="button"
+                            aria-label="Cambiar de propiedad"
+                            (click)="propertyPickerOpen = !propertyPickerOpen">
+                        <i class="pi pi-chevron-down"></i>
+                    </button>
+                }
             </div>
+
+            @if (propertyPickerOpen && properties.length > 1) {
+                <div class="hos-nav__picker">
+                    <span class="hos-nav__picker-title">Cambiar de propiedad</span>
+                    @for (prop of properties; track prop.propertyId) {
+                        <button type="button" class="hos-nav__picker-item"
+                                [class.hos-nav__picker-item--active]="prop.propertyId === activePropertyId"
+                                (click)="switchProperty(prop)">
+                            <span class="hos-nav__picker-name">{{ prop.name }}</span>
+                            <span class="hos-nav__picker-sub">{{ prop.propertyRole }} · {{ prop.currency }}</span>
+                        </button>
+                    }
+                </div>
+            }
 
             <!-- items de navegación -->
             <ul class="hos-nav__list">
@@ -184,6 +209,37 @@ const HOTEL_NAV: HosNavItem[] = [
             transition: color .15s;
         }
         .hos-nav__property-btn:hover { color: var(--primary-color); }
+
+        /* ── Selector de propiedad ──────────────────────────── */
+        .hos-nav__picker {
+            margin: 0 12px 6px;
+            padding: 8px;
+            background: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.18);
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .hos-nav__picker-title {
+            font-size: 0.65rem; font-weight: 700; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--text-color-secondary);
+            padding: 4px 8px 6px;
+        }
+        .hos-nav__picker-item {
+            display: flex; flex-direction: column; gap: 1px;
+            text-align: left; width: 100%;
+            padding: 8px 10px; border: none; border-radius: 8px;
+            background: transparent; color: var(--text-color);
+            font-family: var(--font-family); font-size: 0.8125rem; font-weight: 600;
+            cursor: pointer; transition: background .15s;
+        }
+        .hos-nav__picker-item:hover { background: var(--surface-hover); }
+        .hos-nav__picker-item--active { background: color-mix(in srgb, var(--primary-color) 12%, transparent); }
+        .hos-nav__picker-sub {
+            font-size: 0.7rem; font-weight: 500;
+            color: var(--text-color-secondary);
+            text-transform: capitalize;
+        }
 
         /* ── Lista de items ─────────────────────────────────── */
         .hos-nav__list {
@@ -323,9 +379,13 @@ export class AppMenu implements OnInit {
     userRole = '';
     propertyName = 'Sin propiedad';
     propertySub = '';
+    properties: UserProperty[] = [];
+    propertyPickerOpen = false;
+    activePropertyId = localStorage.getItem('auth_hotel_id') ?? '';
 
     private readonly auth = inject(AuthService);
     private readonly hotels = inject(HotelService);
+    private readonly organization = inject(OrganizationService);
     private readonly router = inject(Router);
 
     ngOnInit(): void {
@@ -336,7 +396,15 @@ export class AppMenu implements OnInit {
             this.userRole = user?.position || user?.roles?.[0] || 'Miembro del equipo';
         });
 
-        // Propiedad del usuario (auth_hotel_id) o primera activa (GET /api/v1/hotels)
+        // Propiedades disponibles (selector) + propiedad activa (auth_hotel_id)
+        this.organization.getMyProperties().subscribe({
+            next: (props) => {
+                this.properties = props;
+            },
+            error: () => { this.properties = []; }
+        });
+
+        // Propiedad activa: auth_hotel_id o primera asignada
         const myHotelId = localStorage.getItem('auth_hotel_id');
         const hotels$ = myHotelId
             ? this.hotels.getHotelById(myHotelId)
@@ -354,6 +422,22 @@ export class AppMenu implements OnInit {
             },
             error: () => {
                 this.propertySub = 'Pendiente de cargar';
+            }
+        });
+    }
+
+    switchProperty(prop: UserProperty): void {
+        if (prop.propertyId === this.activePropertyId) {
+            this.propertyPickerOpen = false;
+            return;
+        }
+        this.auth.switchProperty(prop.propertyId).subscribe({
+            next: () => {
+                this.propertyPickerOpen = false;
+                window.location.reload();
+            },
+            error: () => {
+                this.propertyPickerOpen = false;
             }
         });
     }
