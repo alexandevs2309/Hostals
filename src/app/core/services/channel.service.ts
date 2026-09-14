@@ -62,6 +62,16 @@ export interface BookingPull {
   rawData: Record<string, any>;
 }
 
+export interface BookingImport {
+  externalBookingId: string;
+  channelRoomCode: string;
+  status: string;
+  message: string;
+  reservationNumber?: string;
+  totalAmount?: number;
+  nights?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ChannelService {
   private url = environment.channelsApiUrl;
@@ -108,6 +118,10 @@ export class ChannelService {
   pullBookings(channelId: string, from: string, to: string): Observable<BookingPull[]> {
     const params = new HttpParams().set('from', from).set('to', to);
     return this.http.get<BookingPull[]>(`${this.url}/${channelId}/pull-bookings`, { params });
+  }
+
+  importBookings(channelId: string, from: string, to: string): Observable<BookingImport[]> {
+    return this.http.post<BookingImport[]>(`${this.url}/${channelId}/import-bookings`, { from, to });
   }
 
   getMappings(channelId: string): Observable<ChannelMapping[]> {

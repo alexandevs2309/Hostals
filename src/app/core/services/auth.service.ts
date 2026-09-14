@@ -277,6 +277,15 @@ export class AuthService {
     return this.http.get<boolean>(`${this.authUrl}/check-email/${encodeURIComponent(email)}`);
   }
 
+  // Cambia la propiedad activa y reemite el token (hotel_id actualizado).
+  // storeAuthData persiste el nuevo token y auth_hotel_id (backend devuelve user.hotelId forzado).
+  switchProperty(propertyId: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.authUrl}/switch-property`, { propertyId })
+      .pipe(
+        tap(response => this.storeAuthData(response))
+      );
+  }
+
   // Valida el token JWT contra el servidor
   validateToken(): Observable<{ valid: boolean; message: string }> {
     return this.http.get<{ valid: boolean; message: string }>(`${this.authUrl}/validate-token`);

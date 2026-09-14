@@ -65,6 +65,31 @@ export interface DashboardWidgetsDto {
     revenueTrend: ChartPointDto[];
 }
 
+export interface RoomTypeAnalyticsDto {
+    roomTypeName: string;
+    rooms: number;
+    soldNights: number;
+    occupancyRate: number;
+    revenue: number;
+    averageDailyRate: number;
+}
+
+export interface RangeAnalyticsDto {
+    from: string;
+    to: string;
+    days: number;
+    totalRooms: number;
+    soldNights: number;
+    availableNights: number;
+    occupancyRate: number;
+    averageDailyRate: number;
+    revenuePerAvailableRoom: number;
+    roomRevenue: number;
+    occupancySeries: ChartPointDto[];
+    revenueSeries: ChartPointDto[];
+    byRoomType: RoomTypeAnalyticsDto[];
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -130,6 +155,11 @@ export class DashboardService {
     getRevenueTrend(period = 'year'): Observable<ChartPointDto[]> {
         const params = this.merchantParams(new HttpParams().set('period', period));
         return this.http.get<ChartPointDto[]>(`${this.baseUrl}/analytics/revenue`, { params });
+    }
+
+    getRangeAnalytics(from: string, to: string): Observable<RangeAnalyticsDto> {
+        const params = this.merchantParams(new HttpParams().set('from', from).set('to', to));
+        return this.http.get<RangeAnalyticsDto>(`${this.baseUrl}/analytics/range`, { params });
     }
 
     getWidgets(): Observable<DashboardWidgetsDto> {
