@@ -1,0 +1,230 @@
+<div class="hos-auto">
+
+    <!-- Encabezado -->
+    <div class="hos-auto__head">
+        <div>
+            <h1 class="hos-auto__title">Automatización y mensajería</h1>
+            <p class="hos-auto__sub" [textContent]="hotelName() || 'Propiedad'"></p>
+        </div>
+        <span class="hos-auto__pill">{{ activeSection() === 'rules' ? 'Reglas de reserva' : 'Historial de mensajes' }}</span>
+    </div>
+
+    @if (loading()) {
+        <div class="hos-auto__empty">Cargando automatización…</div>
+    } @else if (error()) {
+        <div class="hos-auto__empty">
+            <p>{{ error() }}</p>
+            <button type="button" class="hos-auto__btn" (click)="retry()">Reintentar</button>
+        </div>
+    } @else {
+
+        <!-- Tabs principales -->
+        <nav class="hos-auto__tabs">
+            <button type="button"
+                    class="hos-auto__tab"
+                    [class.hos-auto__tab--active]="activeSection() === 'rules'"
+                    (click)="switchSection('rules')">
+                <i class="pi pi-bolt"></i> Reglas
+            </button>
+            <button type="button"
+                    class="hos-auto__tab"
+                    [class.hos-auto__tab--active]="activeSection() === 'messages'"
+                    (click)="switchSection('messages')">
+                <i class="pi pi-inbox"></i> Mensajes
+                @if (messages().length > 0) {
+                    <span class="hos-auto__tab-count">{{ messages().length }}</span>
+                }
+            </button>
+        </nav>
+
+        @if (activeSection() === 'rules') {
+
+            <!-- Formulario de regla -->
+            <div class="hos-auto__card">
+                <div class="hos-auto__card-head">
+                    <h3 class="hos-auto__card-title">{{ editingId() ? 'Editar regla' : 'Nueva regla' }}</h3>
+                    @if (editingId()) {
+                        <button type="button" class="hos-auto__btn hos-auto__btn--ghost" (click)="cancelEdit()">Cancelar edición</button>
+                    }
+                </div>
+
+                <div class="hos-auto__grid">
+                    <label class="hos-auto__field">
+                        <span>Nombre</span>
+                        <input class="hos-auto__input" type="text"
+                               placeholder="Ej. WhatsApp bienvenida check-in"
+                               [value]="form().name"
+                               (input)="setFormField('name', $any($event.target).value)" />
+                    </label>
+                    <label class="hos-auto__field">
+                        <span>Evento</span>
+                        <select class="hos-auto__input" [value]="form().triggerEvent" (change)="setFormField('triggerEvent', $any($event.target).value)">
+                            <option value="" disabled>Selecciona un evento…</option>
+                            @for (t of triggers(); track t.name) {
+                                <option [value]="t.name">{{ t.name }}</option>
+                            }
+                        </select>
+                        <small class="hos-auto__hint">{{ triggerLabel(form().triggerEvent) }}</small>
+                    </label>
+                    <label class="hos-auto__field">
+                        <span>Canal</span>
+                        <select class="hos-auto__input" [value]="form().channel" (change)="setFormField('channel', $any($event.target).value)">
+                            @for (c of channels(); track c) {
+                                <option [value]="c">{{ c }}</option>
+                            }
+                        </select>
+                    </label>
+                </div>
+
+                <label class="hos-auto__field">
+                    <span>Plantilla</span>
+                    <textarea class="hos-auto__input hos-auto__input--area" rows="3"
+                              placeholder="Ej. 🏨 ¡Bienvenido {Huesped}! Folio {Folio}, salida {Salida}."
+                              [value]="form().template"
+                              (input)="setFormField('template', $any($event.target).value)"></textarea>
+                    <small class="hos-auto__hint">Puedes usar: <code>{{ placeholders }}</code></small>
+                </label>
+
+                @if (formMsg()) {
+                    <p class="hos-auto__msg" [class.hos-auto__msg--ok]="formMsg()!.ok" [class.hos-auto__msg--err]="!formMsg()!.ok">
+                        {{ formMsg()!.text }}
+                    </p>
+                }
+
+                <div class="hos-auto__actions">
+                    <label class="hos-auto__toggle">
+                        <input type="checkbox" [checked]="form().isEnabled" (change)="setFormField('isEnabled', $any($event.target).checked)" />
+                        <span></span>
+                        Activa desde ya
+                    </label>
+                    <button type="button" class="hos-auto__btn" (click)="save()">
+                        {{ editingId() ? 'Guardar cambios' : 'Crear regla' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de reglas -->
+            @if (rules().length === 0) {
+                <div class="hos-auto__empty">Aún no hay reglas. Crea la primera para enviar mensajes automáticos a tus huéspedes.</div>
+            } @else {
+                <div class="hos-auto__list">
+                    @for (rule of rules(); track rule.id) {
+                        <div class="hos-auto__rule">
+                            <div class="hos-auto__rule-main">
+                                <span class="hos-auto__rule-icon" [class.hos-auto__rule-icon--off]="!rule.isEnabled">
+                                    <i [class]="channelIcon(rule.channel)"></i>
+                                </span>
+                                <div class="hos-auto__rule-text">
+                                    <strong>{{ rule.name }}</strong>
+                                    <span class="hos-auto__rule-events">{{ triggerLabel(rule.triggerEvent) }}</span>
+                                    <p class="hos-auto__rule-template">{{ rule.template }}</p>
+                                </div>
+                            </div>
+                            <div class="hos-auto__rule-side">
+                                <span class="hos-auto__badge" [class.hos-auto__badge--on]="rule.isEnabled">
+                                    {{ rule.isEnabled ? 'Activa' : 'Apagada' }}
+                                </span>
+                                <div class="hos-auto__rule-actions">
+                                    <button type="button" class="hos-auto__icon-btn" [class.hos-auto__icon-btn--active]="rule.isEnabled"
+                                            [title]="rule.isEnabled ? 'Desactivar' : 'Activar'"
+                                            (click)="toggle(rule)">
+                                        <i class="pi" [class]="rule.isEnabled ? 'pi-power-off' : 'pi-play'"></i>
+                                    </button>
+                                    <button type="button" class="hos-auto__icon-btn" title="Editar" (click)="edit(rule)">
+                                        <i class="pi pi-pencil"></i>
+                                    </button>
+                                    <button type="button" class="hos-auto__icon-btn hos-auto__icon-btn--danger" title="Eliminar" (click)="deleteRule(rule)">
+                                        <i class="pi pi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        @if (activeSection() === 'messages') {
+
+            <!-- Envío manual -->
+            <div class="hos-auto__card">
+                <div class="hos-auto__card-head">
+                    <h3 class="hos-auto__card-title">Enviar mensaje manual</h3>
+                    <span class="hos-auto__hint">Canal: WhatsApp, SMS o Email (simulado)</span>
+                </div>
+
+                <div class="hos-auto__grid">
+                    <label class="hos-auto__field hos-auto__field--grow">
+                        <span>Reserva</span>
+                        <select class="hos-auto__input" [value]="manual().reservationId" (change)="setManualField('reservationId', $any($event.target).value)">
+                            <option value="" disabled>Elige la reserva del huésped…</option>
+                            @for (r of reservations(); track r.id) {
+                                <option [value]="r.id">{{ reservationLabel(r) }}</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="hos-auto__field">
+                        <span>Canal</span>
+                        <select class="hos-auto__input" [value]="manual().channel" (change)="setManualField('channel', $any($event.target).value)">
+                            @for (c of channels(); track c) {
+                                <option [value]="c">{{ c }}</option>
+                            }
+                        </select>
+                    </label>
+                </div>
+
+                <label class="hos-auto__field">
+                    <span>Mensaje</span>
+                    <textarea class="hos-auto__input hos-auto__input--area" rows="2"
+                              placeholder="Ej. ¡Hola {Huesped}! ¿Desea añadir un desayuno?"
+                              [value]="manual().message"
+                              (input)="setManualField('message', $any($event.target).value)"></textarea>
+                </label>
+
+                @if (manualMsg()) {
+                    <p class="hos-auto__msg" [class.hos-auto__msg--ok]="manualMsg()!.ok" [class.hos-auto__msg--err]="!manualMsg()!.ok">
+                        {{ manualMsg()!.text }}
+                    </p>
+                }
+
+                <div class="hos-auto__actions">
+                    <button type="button" class="hos-auto__btn" (click)="sendManual()">
+                        <i class="pi pi-send"></i> Enviar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Historial -->
+            @if (messages().length === 0) {
+                <div class="hos-auto__empty">Aún no hay mensajes enviados. Se generan automáticamente con tus reglas o manualmente aquí.</div>
+            } @else {
+                <div class="hos-auto__msgs">
+                    @for (m of messages(); track m.id) {
+                        <div class="hos-auto__msg-row">
+                            <span class="hos-auto__rule-icon">
+                                <i [class]="channelIcon(m.channel)"></i>
+                            </span>
+                            <div class="hos-auto__msg-body">
+                                <div class="hos-auto__msg-subject">
+                                    <strong>{{ m.subject }}</strong>
+                                    @if (m.isSent) {
+                                        <span class="hos-auto__badge hos-auto__badge--on">{{ m.channelReference ?? 'Enviado' }}</span>
+                                    } @else {
+                                        <span class="hos-auto__badge">Fallido</span>
+                                    }
+                                </div>
+                                <span class="hos-auto__msg-meta">{{ m.channel }} · {{ m.recipient }} · {{ m.sentAt | date:'dd MMM yyyy, HH:mm' }}</span>
+                                @if (m.body) {
+                                    <p class="hos-auto__msg-template">{{ m.body }}</p>
+                                }
+                                @if (m.error) {
+                                    <p class="hos-auto__msg-err">{{ m.error }}</p>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    }
+</div>
