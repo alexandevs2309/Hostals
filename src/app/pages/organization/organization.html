@@ -1,0 +1,259 @@
+<div class="hos-org">
+    <div class="hos-org__head">
+        <div>
+            <h1 class="hos-org__title">Organización</h1>
+            <p class="hos-org__sub">Multi-propiedad: organización, propiedades y roles de tu equipo.</p>
+        </div>
+        @if (isAdmin()) {
+            <button class="hos-btn hos-btn--primary" type="button" (click)="openInvite()">
+                <i class="pi pi-user-plus"></i> Invitar miembro
+            </button>
+        }
+    </div>
+
+    @if (loading()) {
+        <p class="hos-org__muted">Cargando…</p>
+    } @else if (error()) {
+        <p class="hos-org__error">{{ error() }}</p>
+    } @else {
+
+        <!-- ── Resumen de la organización ─────────────────────── -->
+        @let org = summary();
+        <section class="hos-org__card">
+            <h2 class="hos-org__card-title">Datos de la organización</h2>
+            <div class="hos-org__grid">
+                <div class="hos-org__field">
+                    <span class="hos-org__label">Nombre</span>
+                    <span class="hos-org__value">{{ org?.name }}</span>
+                </div>
+                <div class="hos-org__field">
+                    <span class="hos-org__label">Razón social</span>
+                    <span class="hos-org__value">{{ org?.businessName || '—' }}</span>
+                </div>
+                <div class="hos-org__field">
+                    <span class="hos-org__label">RFC</span>
+                    <span class="hos-org__value">{{ org?.taxId || '—' }}</span>
+                </div>
+                <div class="hos-org__field">
+                    <span class="hos-org__label">Plan</span>
+                    <span class="hos-org__value hos-org__value--cap">{{ org?.plan }}</span>
+                </div>
+                <div class="hos-org__field">
+                    <span class="hos-org__label">Moneda</span>
+                    <span class="hos-org__value">{{ org?.defaultCurrency }}</span>
+                </div>
+                <div class="hos-org__field">
+                    <span class="hos-org__label">Zona horaria</span>
+                    <span class="hos-org__value">{{ org?.timeZone }}</span>
+                </div>
+                <div class="hos-org__field">
+                    <span class="hos-org__label">Miembros</span>
+                    <span class="hos-org__value">{{ org?.memberCount }}</span>
+                </div>
+                <div class="hos-org__field">
+                    <span class="hos-org__label">Mi rol</span>
+                    <span class="hos-org__value hos-org__value--cap">{{ org?.myOrganizationRole }}</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Propiedades ────────────────────────────────────── -->
+        <section class="hos-org__card">
+            <h2 class="hos-org__card-title">Propiedades</h2>
+            <table class="hos-org__table">
+                <thead>
+                    <tr>
+                        <th>Propiedad</th>
+                        <th>Mi rol</th>
+                        <th>Moneda</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (prop of properties(); track prop.propertyId) {
+                        <tr>
+                            <td>{{ prop.name }}</td>
+                            <td><span class="hos-org__role hos-org__role--cap">{{ prop.propertyRole }}</span></td>
+                            <td>{{ prop.currency }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ── Miembros ───────────────────────────────────────── -->
+        @if (isAdmin()) {
+            <section class="hos-org__card">
+                <h2 class="hos-org__card-title">Miembros del equipo</h2>
+
+                @if (editMsg(); as m) {
+                    <p class="hos-org__toast" [class.hos-org__toast--ok]="m.ok" [class.hos-org__toast--err]="!m.ok">{{ m.text }}</p>
+                }
+                @if (inviteMsg(); as m) {
+                    <p class="hos-org__toast" [class.hos-org__toast--ok]="m.ok" [class.hos-org__toast--err]="!m.ok">{{ m.text }}</p>
+                }
+
+                @if (inviteResult(); as r) {
+                    <div class="hos-org__temp">
+                        <div>
+                            <strong>{{ r.email }}</strong> fue invitado. Comparte la contraseña temporal (solo se muestra una vez):
+                        </div>
+                        <code>{{ r.temporaryPassword }}</code>
+                        <button class="hos-btn hos-btn--ghost" type="button" (click)="inviteResult.set(null)">Entendido</button>
+                    </div>
+                }
+
+                <table class="hos-org__table">
+                    <thead>
+                        <tr>
+                            <th>Miembro</th>
+                            <th>Correo</th>
+                            <th>Rol org.</th>
+                            <th>Propiedades</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (member of members(); track member.userId) {
+                            <tr>
+                                <td>{{ member.fullName }}</td>
+                                <td>{{ member.email }}</td>
+                                <td><span class="hos-org__role hos-org__role--cap">{{ member.organizationRole }}</span></td>
+                                <td>
+                                    <span class="hos-org__props">
+                                        @for (p of member.properties; track $index) {
+                                            <span class="hos-org__prop">{{ p.propertyName }} ({{ p.propertyRole }})</span>
+                                        }
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="hos-org__status" [class.hos-org__status--off]="!member.isActive">
+                                        {{ member.isActive ? 'Activo' : 'Inactivo' }}
+                                    </span>
+                                </td>
+                                <td class="hos-org__actions">
+                                    <button class="hos-org__icon-btn" type="button" title="Editar" (click)="startEdit(member)">
+                                        <i class="pi pi-pencil"></i>
+                                    </button>
+                                    <button class="hos-org__icon-btn hos-org__icon-btn--danger" type="button" title="Eliminar" (click)="removeMember(member)">
+                                        <i class="pi pi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
+    }
+
+    <!-- ── Invitar miembro ────────────────────────────────────── -->
+    @if (showInvite()) {
+        <div class="hos-org__overlay" (click)="showInvite.set(false)">
+            <form class="hos-org__modal" (ngSubmit)="submitInvite()" (click)="$event.stopPropagation()">
+                <h2 class="hos-org__modal-title">Invitar miembro</h2>
+
+                <label class="hos-org__form">
+                    <span>Correo</span>
+                    <input type="email" [(ngModel)]="inviteForm().email" name="email" required>
+                </label>
+                <label class="hos-org__form">
+                    <span>Nombre</span>
+                    <input type="text" [(ngModel)]="inviteForm().firstName" name="firstName" required>
+                </label>
+                <label class="hos-org__form">
+                    <span>Apellido</span>
+                    <input type="text" [(ngModel)]="inviteForm().lastName" name="lastName" required>
+                </label>
+                <label class="hos-org__form">
+                    <span>Rol en la organización</span>
+                    <select [(ngModel)]="inviteForm().organizationRole" name="organizationRole">
+                        @for (role of orgRoles; track role) {
+                            <option [value]="role">{{ role }}</option>
+                        }
+                    </select>
+                </label>
+
+                <fieldset class="hos-org__assign">
+                    <legend>Asignaciones por propiedad</legend>
+                    @for (assign of inviteForm().assignments; track assign.propertyId) {
+                        <label class="hos-org__assign-row">
+                            <span>{{ propName(assign.propertyId) }}</span>
+                            <select [(ngModel)]="assign.propertyRole" [name]="'propRole_' + assign.propertyId">
+                                @for (role of propertyRoles; track role) {
+                                    <option [value]="role">{{ role }}</option>
+                                }
+                            </select>
+                        </label>
+                    }
+                    @empty {
+                        <p class="hos-org__muted">Creando propiedades se podrán asignar roles.</p>
+                    }
+                </fieldset>
+
+                @if (inviteMsg(); as m) {
+                    <p class="hos-org__toast" [class.hos-org__toast--ok]="m.ok" [class.hos-org__toast--err]="!m.ok">{{ m.text }}</p>
+                }
+
+                <div class="hos-org__modal-actions">
+                    <button class="hos-btn hos-btn--ghost" type="button" (click)="showInvite.set(false)">Cancelar</button>
+                    <button class="hos-btn hos-btn--primary" type="submit">Invitar</button>
+                </div>
+            </form>
+        </div>
+    }
+
+    <!-- ── Editar miembro ─────────────────────────────────────── -->
+    @if (editing(); as e) {
+        <div class="hos-org__overlay" (click)="cleanEdits()">
+            <form class="hos-org__modal" (ngSubmit)="submitEdit()" (click)="$event.stopPropagation()">
+                <h2 class="hos-org__modal-title">Editar {{ e.email }}</h2>
+
+                <label class="hos-org__form">
+                    <span>Rol en la organización</span>
+                    <select [(ngModel)]="e.organizationRole" name="editOrgRole">
+                        @for (role of orgRoles; track role) {
+                            <option [value]="role">{{ role }}</option>
+                        }
+                    </select>
+                </label>
+                <label class="hos-org__form hos-org__form--check">
+                    <input type="checkbox" [(ngModel)]="e.isActive" name="editActive">
+                    <span>Miembro activo (puede iniciar sesión)</span>
+                </label>
+
+                <fieldset class="hos-org__assign">
+                    <legend>Asignaciones por propiedad</legend>
+                    @for (prop of properties(); track prop.propertyId) {
+                        @let current = assignmentFor(prop.propertyId);
+                        <label class="hos-org__assign-row">
+                            <span>
+                                <input class="hos-org__assign-check"
+                                       type="checkbox"
+                                       [checked]="!!current"
+                                       (change)="toggleAssignment(prop.propertyId, $event)">
+                                {{ prop.name }}
+                            </span>
+                            @if (current) {
+                                <select [(ngModel)]="current.propertyRole" [name]="'editPropRole_' + prop.propertyId">
+                                    @for (role of propertyRoles; track role) {
+                                        <option [value]="role">{{ role }}</option>
+                                    }
+                                </select>
+                            }
+                        </label>
+                    }
+                </fieldset>
+
+                @if (editMsg(); as m) {
+                    <p class="hos-org__toast" [class.hos-org__toast--ok]="m.ok" [class.hos-org__toast--err]="!m.ok">{{ m.text }}</p>
+                }
+
+                <div class="hos-org__modal-actions">
+                    <button class="hos-btn hos-btn--ghost" type="button" (click)="cleanEdits()">Cancelar</button>
+                    <button class="hos-btn hos-btn--primary" type="submit">Guardar</button>
+                </div>
+            </form>
+        </div>
+    }
+</div>
