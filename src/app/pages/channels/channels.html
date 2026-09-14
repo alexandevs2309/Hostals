@@ -1,0 +1,306 @@
+<div class="hos-channels">
+
+    <!-- Encabezado -->
+    <div class="hos-channels__head">
+        <div>
+            <h1 class="hos-channels__title">Canales de distribución</h1>
+            <p class="hos-channels__sub" [textContent]="hotelName() || 'Propiedad'"></p>
+        </div>
+        <span class="hos-channels__pill">{{ channels().length }} {{ channels().length === 1 ? 'canal' : 'canales' }}</span>
+    </div>
+
+    @if (loading()) {
+        <div class="hos-channels__empty">Cargando canales…</div>
+    } @else if (error()) {
+        <div class="hos-channels__empty">
+            <p>{{ error() }}</p>
+            <button type="button" class="hos-channels__btn" (click)="retry()">Reintentar</button>
+        </div>
+    } @else if (channels().length === 0) {
+        <div class="hos-channels__empty">Aún no hay canales de venta configurados.</div>
+    } @else {
+        <div class="hos-channels__list">
+            @for (channel of channels(); track channel.id) {
+                <div class="hos-channel" [class.hos-channel--open]="expanded() === channel.id">
+                    <!-- fila principal -->
+                    <button type="button" class="hos-channel__row" (click)="toggle(channel)">
+                        <span class="hos-channel__icon">
+                            <i [class]="channel.channelType === 'Ota' ? 'pi pi-globe' : channel.channelType === 'WalkIn' ? 'pi pi-user' : 'pi pi-phone'"></i>
+                        </span>
+                        <span class="hos-channel__main">
+                            <span class="hos-channel__name">{{ channel.name }}</span>
+                            <span class="hos-channel__meta">{{ channel.channelTypeLabel }} · Comisión {{ channel.commissionRate }}%</span>
+                        </span>
+                        <span class="hos-channel__status" [class.hos-channel__status--on]="channel.isActive">
+                            {{ channel.isActive ? 'Activo' : 'Inactivo' }}
+                        </span>
+                        <i class="pi pi-angle-down hos-channel__chevron"></i>
+                    </button>
+
+                    @if (expanded() === channel.id) {
+                        <div class="hos-channel__body">
+                            <!-- tabs -->
+                            <nav class="hos-channel__tabs">
+                                @for (item of [
+                                    { id: 'credenciales', label: 'Credenciales', icon: 'pi pi-key' },
+                                    { id: 'mapeos', label: 'Mapeos', icon: 'pi pi-sitemap' },
+                                    { id: 'publicacion', label: 'Publicación', icon: 'pi pi-send' },
+                                    { id: 'widget', label: 'Motor de reservas', icon: 'pi pi-bolt' }
+                                ]; track item.id) {
+                                    <button type="button"
+                                            class="hos-channel__tab"
+                                            [class.hos-channel__tab--active]="tab(channel.id) === item.id"
+                                            (click)="setTab(channel.id, item.id)">
+                                        <i [class]="item.icon"></i> {{ item.label }}
+                                    </button>
+                                }
+                            </nav>
+
+                            @if (tab(channel.id) === 'credenciales') {
+                                <div class="hos-channel__panel">
+                                    <label class="hos-channel__label">Credenciales de conexión (JSON)</label>
+                                    <textarea class="hos-channel__textarea"
+                                              rows="4"
+                                              [ngModel]="credentials()[channel.id] ?? ''"
+                                              (ngModelChange)="setCredentials(channel.id, $event)"
+                                              placeholder='{"apiKey":"...","propertyId":"..."}'></textarea>
+                                    <div class="hos-channel__actions">
+                                        <button type="button" class="hos-channel__btn" (click)="saveCredentials(channel)">
+                                            <i class="pi pi-save"></i> Guardar credenciales
+                                        </button>
+                                        <button type="button" class="hos-channel__btn hos-channel__btn--ghost" (click)="test(channel)">
+                                            <i class="pi pi-plug"></i> Probar conexión
+                                        </button>
+                                    </div>
+                                    @if (connection()[channel.id]) {
+                                        <p class="hos-channel__msg"
+                                           [class.hos-channel__msg--ok]="connection()[channel.id].ok"
+                                           [class.hos-channel__msg--err]="!connection()[channel.id].ok">
+                                            {{ connection()[channel.id].text }}
+                                        </p>
+                                    }
+                                    @if (credMsg()[channel.id]) {
+                                        <p class="hos-channel__msg"
+                                           [class.hos-channel__msg--ok]="credMsg()[channel.id].ok"
+                                           [class.hos-channel__msg--err]="!credMsg()[channel.id].ok">
+                                            {{ credMsg()[channel.id].text }}
+                                        </p>
+                                    }
+                                </div>
+                            }
+
+                            @if (tab(channel.id) === 'mapeos') {
+                                <div class="hos-channel__panel">
+                                    <div class="hos-channel__actions">
+                                        <button type="button" class="hos-channel__btn" (click)="autoMappings(channel)">
+                                            <i class="pi pi-magic"></i> Auto-crear mapeos
+                                        </button>
+                                        <button type="button" class="hos-channel__btn hos-channel__btn--ghost" (click)="loadMappings(channel)">
+                                            <i class="pi pi-refresh"></i> Recargar
+                                        </button>
+                                    </div>
+
+                                    @if (mappings()[channel.id]?.length) {
+                                        <div class="hos-channel__table-wrap">
+                                            <table class="hos-channel__table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Categoría local</th>
+                                                        <th>Código del canal</th>
+                                                        <th>Plan de tarifa</th>
+                                                        <th>Estado</th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @for (m of mappings()[channel.id] ?? []; track m.id) {
+                                                        <tr>
+                                                            <td>{{ m.roomTypeName }}</td>
+                                                            <td><code>{{ m.channelRoomCode }}</code></td>
+                                                            <td>{{ m.channelRatePlanCode ?? '—' }}</td>
+                                                            <td>{{ m.isActive ? 'Activo' : 'Inactivo' }}</td>
+                                                            <td>
+                                                                <button type="button" class="hos-channel__btn hos-channel__btn--danger" (click)="deleteMapping(channel, m)">
+                                                                    <i class="pi pi-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    } @else {
+                                        <p class="hos-channel__hint">Sin mapeos todavía. Usa "Auto-crear mapeos" o agrega uno manualmente.</p>
+                                    }
+
+                                    <div class="hos-channel__form">
+                                        <select class="hos-channel__input"
+                                                [ngModel]="newMapping()[channel.id]?.roomTypeId"
+                                                (ngModelChange)="setNewMapping(channel.id, 'roomTypeId', $event)">
+                                            <option [ngValue]="''">Categoría local…</option>
+                                            @for (rt of roomTypes(); track rt.id) {
+                                                <option [ngValue]="rt.id">{{ rt.name }} · {{ rt.basePrice }} {{ widgetConfig()?.currency ?? '' }}</option>
+                                            }
+                                        </select>
+                                        <input class="hos-channel__input"
+                                               placeholder="Código del canal (p. ej. DBL_STD)"
+                                               [ngModel]="newMapping()[channel.id]?.channelRoomCode"
+                                               (ngModelChange)="setNewMapping(channel.id, 'channelRoomCode', $event)" />
+                                        <input class="hos-channel__input"
+                                               placeholder="Plan de tarifa (RATE_FLEX)"
+                                               [ngModel]="newMapping()[channel.id]?.channelRatePlanCode"
+                                               (ngModelChange)="setNewMapping(channel.id, 'channelRatePlanCode', $event)" />
+                                        <button type="button" class="hos-channel__btn" (click)="upsertMapping(channel)">
+                                            <i class="pi pi-plus"></i> Guardar mapeo
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (tab(channel.id) === 'publicacion') {
+                                <div class="hos-channel__panel">
+                                    <div class="hos-channel__form">
+                                        <label class="hos-channel__label">Desde
+                                            <input type="date" class="hos-channel__input"
+                                                   [ngModel]="pushDates()[channel.id]?.from"
+                                                   (ngModelChange)="setPushDate(channel.id, 'from', $event)" />
+                                        </label>
+                                        <label class="hos-channel__label">Hasta
+                                            <input type="date" class="hos-channel__input"
+                                                   [ngModel]="pushDates()[channel.id]?.to"
+                                                   (ngModelChange)="setPushDate(channel.id, 'to', $event)" />
+                                        </label>
+                                    </div>
+                                    <div class="hos-channel__actions">
+                                        <button type="button" class="hos-channel__btn" (click)="pushAvailability(channel)">
+                                            <i class="pi pi-cloud-upload"></i> Enviar disponibilidad
+                                        </button>
+                                        <button type="button" class="hos-channel__btn hos-channel__btn--ghost" (click)="pushRates(channel)">
+                                            <i class="pi pi-dollar"></i> Enviar tarifas
+                                        </button>
+                                        <button type="button" class="hos-channel__btn hos-channel__btn--ghost" (click)="pullBookings(channel)">
+                                            <i class="pi pi-cloud-download"></i> Descargar reservas
+                                        </button>
+                                        <button type="button" class="hos-channel__btn hos-channel__btn--ghost" (click)="importBookings(channel)">
+                                            <i class="pi pi-download"></i> Importar al PMS
+                                        </button>
+                                    </div>
+                                    @if (pushMsg()[channel.id]) {
+                                        <p class="hos-channel__msg"
+                                           [class.hos-channel__msg--ok]="pushMsg()[channel.id].ok"
+                                           [class.hos-channel__msg--err]="!pushMsg()[channel.id].ok">
+                                            {{ pushMsg()[channel.id].text }}
+                                        </p>
+                                    }
+                                    @if ((pull()[channel.id] ?? []).length > 0) {
+                                        <div class="hos-channel__table-wrap">
+                                            <table class="hos-channel__table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Referencia</th>
+                                                        <th>Huésped</th>
+                                                        <th>Código</th>
+                                                        <th>Entrada</th>
+                                                        <th>Salida</th>
+                                                        <th>Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @for (b of pull()[channel.id] ?? []; track b.externalBookingId) {
+                                                        <tr>
+                                                            <td><code>{{ b.externalBookingId }}</code></td>
+                                                            <td>{{ b.guestName }}</td>
+                                                            <td>{{ b.channelRoomCode }}</td>
+                                                            <td>{{ b.checkIn.slice(0, 10) }}</td>
+                                                            <td>{{ b.checkOut.slice(0, 10) }}</td>
+                                                            <td>{{ b.totalPrice }} {{ b.currency }}</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    @if ((importResult()[channel.id] ?? []).length > 0) {
+                                        <div class="hos-channel__table-wrap">
+                                            <table class="hos-channel__table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Referencia</th>
+                                                        <th>Código</th>
+                                                        <th>Estado</th>
+                                                        <th>Detalle</th>
+                                                        <th>Folio</th>
+                                                        <th>Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @for (r of importResult()[channel.id] ?? []; track r.externalBookingId) {
+                                                        <tr>
+                                                            <td><code>{{ r.externalBookingId }}</code></td>
+                                                            <td>{{ r.channelRoomCode }}</td>
+                                                            <td>
+                                                                <span class="hos-channel__status"
+                                                                      [class.hos-channel__status--ok]="r.status === 'Imported'"
+                                                                      [class.hos-channel__status--skip]="r.status === 'Skipped'"
+                                                                      [class.hos-channel__status--err]="r.status === 'Error'">
+                                                                    {{ r.status }}
+                                                                </span>
+                                                            </td>
+                                                            <td>{{ r.message }}</td>
+                                                            <td>{{ r.reservationNumber ?? '—' }}</td>
+                                                            <td>{{ r.totalAmount ?? '—' }}</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            @if (tab(channel.id) === 'widget') {
+                                <div class="hos-channel__panel">
+                                    <p class="hos-channel__hint">
+                                        El motor de reservas es un widget embebible (sin login) que expone disponibilidad y tarifas de
+                                        {{ hotelName() || 'tu propiedad' }} y cobra a través de pasarelas locales (Azul / CardNet).
+                                    </p>
+
+                                    <label class="hos-channel__label">¿Cómo se ve? (vista previa)</label>
+                                    <div id="auron-widget-mount" class="hos-channel__widget"></div>
+
+                                    <label class="hos-channel__label">Snippet para incrustar en tu sitio web</label>
+                                    <pre class="hos-channel__code">{{ snippet() }}</pre>
+
+                                    <label class="hos-channel__label">Pasarelas de pago locales</label>
+                                    <div class="hos-channel__gateways">
+                                        @for (g of gateways(); track g.name) {
+                                            <div class="hos-channel__gateway">
+                                                <div>
+                                                    <div class="hos-channel__gateway-name">{{ g.name }}</div>
+                                                    <div class="hos-channel__gateway-sub">{{ g.displayName }}</div>
+                                                </div>
+                                                <button type="button" class="hos-channel__btn hos-channel__btn--ghost" (click)="chargeSim(g.name)">
+                                                    Simular cargo $100
+                                                </button>
+                                            </div>
+                                            @if (payGateways()[g.name]) {
+                                                <p class="hos-channel__msg"
+                                                   [class.hos-channel__msg--ok]="payGateways()[g.name].ok"
+                                                   [class.hos-channel__msg--err]="!payGateways()[g.name].ok">
+                                                    {{ payGateways()[g.name].text }}
+                                                </p>
+                                            }
+                                        }
+                                        @if (gateways().length === 0) {
+                                            <p class="hos-channel__hint">Sin pasarelas registradas.</p>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
