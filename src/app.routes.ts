@@ -13,6 +13,7 @@ import { NoHotelPage } from './app/pages/no-hotel/no-hotel';
 import { AuditPage } from './app/pages/audit/audit';
 import { SecurityPage } from './app/pages/security/security';
 import { HotelPage } from './app/pages/hotel/hotel';
+import { SettingsPage } from './app/pages/settings/settings';
 import { MaintenancePage } from './app/pages/maintenance/maintenance';
 import { HousekeepingPage } from './app/pages/housekeeping/housekeeping';
 import { AnalyticsPage } from './app/pages/analytics/analytics';
@@ -47,7 +48,7 @@ export const appRoutes: Routes = [
             { path: 'maintenance',  component: MaintenancePage },
             { path: 'finance',      component: FinancePage, data: { roles: ['Admin', 'Manager'], requiresHotel: true }, canActivate: [roleGuard, requiresHotelGuard] },
             { path: 'analytics',    component: AnalyticsPage, data: { roles: ['Admin', 'Manager'] }, canActivate: [roleGuard] },
-            { path: 'settings',     component: HotelPage, data: { roles: ['Admin'] }, canActivate: [roleGuard] },
+            { path: 'settings',     component: SettingsPage, data: { roles: ['Admin'] }, canActivate: [roleGuard] },
             { path: 'no-hotel',     component: NoHotelPage },
             { path: 'audit',        component: AuditPage, data: { roles: ['Admin'] }, canActivate: [roleGuard] },
             { path: 'security',     component: SecurityPage },

@@ -1,0 +1,200 @@
+<div class="rm-page">
+
+    <!-- ── Cabecera ─────────────────────────────────────── -->
+    <div class="rm-head">
+        <div>
+            <h1 class="rm-head__title">Configuración</h1>
+            <p class="rm-head__sub">Ajustes generales de la propiedad</p>
+        </div>
+        <div class="rm-head__actions">
+            @if (msg()) {
+                <span class="rm-toast" [class.rm-toast--err]="msgError()">
+                    <i class="pi" [class.pi-check-circle]="!msgError()" [class.pi-exclamation-circle]="msgError()"></i>
+                    {{ msg() }}
+                </span>
+            }
+        </div>
+    </div>
+
+    @if (loading()) {
+        <div class="rm-skel">
+            <div class="rm-row rm-row--skel"></div>
+            <div class="rm-row rm-row--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="rm-panel">
+            <div class="rm-empty">
+                <div class="rm-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+                <p>{{ error() }}</p>
+                <button class="rm-btn rm-btn--ghost" (click)="load()"><i class="pi pi-refresh"></i> Reintentar</button>
+            </div>
+        </div>
+    } @else {
+        <div class="st-sections">
+
+            <!-- ── Propiedad ─────────────────────────────────── -->
+            <section class="st-card">
+                <div class="st-card__head">
+                    <i class="pi pi-building" style="color:#0369a1"></i>
+                    <h2 class="st-card__title">Datos de la propiedad</h2>
+                </div>
+                <div class="ht-form__grid">
+                    <label class="ht-field">
+                        <span>Nombre comercial *</span>
+                        <input [(ngModel)]="form.name" name="name" placeholder="Hotel …" />
+                    </label>
+                    <label class="ht-field">
+                        <span>Razón social</span>
+                        <input [(ngModel)]="form.businessName" name="businessName" placeholder="S.A. de C.V." />
+                    </label>
+                    <label class="ht-field ht-field--full">
+                        <span>Descripción</span>
+                        <input [(ngModel)]="form.description" name="description" placeholder="Breve descripción de la propiedad" />
+                    </label>
+                </div>
+            </section>
+
+            <!-- ── Localización y contacto ─────────────────────── -->
+            <section class="st-card">
+                <div class="st-card__head">
+                    <i class="pi pi-map-marker" style="color:#0369a1"></i>
+                    <h2 class="st-card__title">Localización y contacto</h2>
+                </div>
+                <div class="ht-form__grid">
+                    <label class="ht-field ht-field--full">
+                        <span>Dirección *</span>
+                        <input [(ngModel)]="form.address" name="address" />
+                    </label>
+                    <label class="ht-field">
+                        <span>Código postal</span>
+                        <input [(ngModel)]="form.postalCode" name="postalCode" />
+                    </label>
+                    <label class="ht-field">
+                        <span>Ciudad *</span>
+                        <input [(ngModel)]="form.city" name="city" />
+                    </label>
+                    <label class="ht-field">
+                        <span>País *</span>
+                        <input [(ngModel)]="form.country" name="country" />
+                    </label>
+                    <label class="ht-field">
+                        <span>Teléfono</span>
+                        <input [(ngModel)]="form.phoneNumber" name="phoneNumber" />
+                    </label>
+                    <label class="ht-field">
+                        <span>Email del hotel</span>
+                        <input [(ngModel)]="form.email" name="email" type="email" />
+                    </label>
+                    <label class="ht-field">
+                        <span>Sitio web</span>
+                        <input [(ngModel)]="form.website" name="website" placeholder="https://…" />
+                    </label>
+                </div>
+            </section>
+
+            <!-- ── Operación ─────────────────────────────────── -->
+            <section class="st-card">
+                <div class="st-card__head">
+                    <i class="pi pi-clock" style="color:#0369a1"></i>
+                    <h2 class="st-card__title">Operación</h2>
+                </div>
+                <div class="ht-form__grid">
+                    <label class="ht-field">
+                        <span>Hora de check-in</span>
+                        <input type="time" [(ngModel)]="form.checkInTime" name="checkInTime" />
+                    </label>
+                    <label class="ht-field">
+                        <span>Hora de check-out</span>
+                        <input type="time" [(ngModel)]="form.checkOutTime" name="checkOutTime" />
+                    </label>
+                    <label class="ht-field">
+                        <span>Zona horaria</span>
+                        <input [(ngModel)]="form.timeZone" name="timeZone" />
+                    </label>
+                    <label class="ht-field ht-field--full">
+                        <span>Idiomas del hotel (separados por coma)</span>
+                        <input [(ngModel)]="form.hotelLanguages" name="hotelLanguages" placeholder="es, en, fr" />
+                    </label>
+                </div>
+            </section>
+
+            <!-- ── Financiero ─────────────────────────────────── -->
+            <section class="st-card">
+                <div class="st-card__head">
+                    <i class="pi pi-wallet" style="color:#0369a1"></i>
+                    <h2 class="st-card__title">Moneda e impuestos</h2>
+                </div>
+                <div class="ht-form__grid">
+                    <label class="ht-field">
+                        <span>Moneda</span>
+                        <select [(ngModel)]="form.currency" name="currency">
+                            @for (c of currencies; track c) {
+                                <option [value]="c">{{ c }}</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="ht-field">
+                        <span>Impuesto predeterminado (%)</span>
+                        <input type="number" [(ngModel)]="form.taxRate" name="taxRate" min="0" max="100" step="0.1" />
+                    </label>
+                </div>
+            </section>
+
+            <!-- ── Estructura ─────────────────────────────────── -->
+            <section class="st-card">
+                <div class="st-card__head">
+                    <i class="pi pi-tag" style="color:#0369a1"></i>
+                    <h2 class="st-card__title">Estructura y módulos</h2>
+                </div>
+                <div class="ht-form__grid">
+                    <label class="ht-field">
+                        <span>Categoría (estrellas)</span>
+                        <select [(ngModel)]="form.starRating" name="starRating">
+                            @for (s of [1, 2, 3, 4, 5]; track s) {
+                                <option [value]="s">{{ s }} estrellas</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="ht-field">
+                        <span>Nº de habitaciones</span>
+                        <input type="number" [(ngModel)]="form.totalRooms" name="totalRooms" min="0" />
+                    </label>
+                    <label class="ht-field">
+                        <span>Año de apertura</span>
+                        <input type="number" [(ngModel)]="form.yearOpened" name="yearOpened" min="1900" />
+                    </label>
+                    <div class="ht-field ht-field--full">
+                        <span>Módulos activos</span>
+                        <div class="ht-modules">
+                            @for (m of modules(); track m) {
+                                <span class="ht-chip">{{ m }}</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── Acciones ───────────────────────────────────── -->
+            <div class="st-actions">
+                <button class="rm-btn rm-btn--primary" [disabled]="saving()" (click)="save()">
+                    @if (saving()) { <i class="pi pi-spin pi-spinner"></i> } @else { <i class="pi pi-check"></i> }
+                    Guardar todos los cambios
+                </button>
+            </div>
+
+            <!-- ── Enlaces rápidos ────────────────────────────── -->
+            <section class="st-card st-card--links">
+                <div class="st-links">
+                    <a class="st-link" routerLink="/app/security">
+                        <i class="pi pi-shield"></i>
+                        <span><strong>Seguridad de la cuenta</strong><small>Contraseña, doble factor y sesiones activas</small></span>
+                    </a>
+                    <a class="st-link" routerLink="/app/hotel">
+                        <i class="pi pi-building"></i>
+                        <span><strong>Mi propiedad</strong><small>Ficha pública de la propiedad</small></span>
+                    </a>
+                </div>
+            </section>
+        </div>
+    }
+</div>
