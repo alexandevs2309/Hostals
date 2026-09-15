@@ -1,8 +1,7 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterLinkActive, Router } from '@angular/router';
 import { map } from 'rxjs';
-import { delay } from 'rxjs/operators';
 import { LayoutService } from '@/app/layout/service/layout.service';
 import { AuthService, User } from '@/app/core/services/auth.service';
 import { OrganizationService, UserProperty } from '@/app/core/services/organization.service';
@@ -63,24 +62,24 @@ const HOTEL_NAV: HosNavItem[] = [
             <div class="hos-nav__property">
                 <div class="hos-nav__property-dot"></div>
                 <div class="hos-nav__property-info">
-                    <span class="hos-nav__property-name">{{ propertyName }}</span>
-                    <span class="hos-nav__property-sub">{{ propertySub }}</span>
+                    <span class="hos-nav__property-name">{{ propertyName() }}</span>
+                    <span class="hos-nav__property-sub">{{ propertySub() }}</span>
                 </div>
-                @if (properties.length > 1) {
+                @if (properties().length > 1) {
                     <button class="hos-nav__property-btn" type="button"
                             aria-label="Cambiar de propiedad"
-                            (click)="propertyPickerOpen = !propertyPickerOpen">
+                            (click)="propertyPickerOpen.set(!propertyPickerOpen())">
                         <i class="pi pi-chevron-down"></i>
                     </button>
                 }
             </div>
 
-            @if (propertyPickerOpen && properties.length > 1) {
+            @if (propertyPickerOpen() && properties().length > 1) {
                 <div class="hos-nav__picker">
                     <span class="hos-nav__picker-title">Cambiar de propiedad</span>
-                    @for (prop of properties; track prop.propertyId) {
+                    @for (prop of properties(); track prop.propertyId) {
                         <button type="button" class="hos-nav__picker-item"
-                                [class.hos-nav__picker-item--active]="prop.propertyId === activePropertyId"
+                                [class.hos-nav__picker-item--active]="prop.propertyId === activePropertyId()"
                                 (click)="switchProperty(prop)">
                             <span class="hos-nav__picker-name">{{ prop.name }}</span>
                             <span class="hos-nav__picker-sub">{{ prop.propertyRole }} · {{ prop.currency }}</span>
@@ -119,10 +118,10 @@ const HOTEL_NAV: HosNavItem[] = [
             <!-- footer del sidebar -->
             <div class="hos-nav__foot">
                 <div class="hos-nav__user">
-                    <div class="hos-nav__avatar">{{ user?.firstName?.charAt(0) ?? 'U' }}{{ user?.lastName?.charAt(0) ?? '' }}</div>
+                    <div class="hos-nav__avatar">{{ user()?.firstName?.charAt(0) ?? 'U' }}{{ user()?.lastName?.charAt(0) ?? '' }}</div>
                     <div class="hos-nav__user-info">
-                        <span class="hos-nav__user-name">{{ userName }}</span>
-                        <span class="hos-nav__user-role">{{ userRole }}</span>
+                        <span class="hos-nav__user-name">{{ userName() }}</span>
+                        <span class="hos-nav__user-role">{{ userRole() }}</span>
                     </div>
                 </div>
                 <button type="button" class="hos-nav__logout" (click)="signOut()">
@@ -376,14 +375,14 @@ export class AppMenu implements OnInit {
     nav = HOTEL_NAV;
     layoutService = inject(LayoutService);
 
-    user: User | null = null;
-    userName = '';
-    userRole = '';
-    propertyName = 'Sin propiedad';
-    propertySub = '';
-    properties: UserProperty[] = [];
-    propertyPickerOpen = false;
-    activePropertyId = localStorage.getItem('auth_hotel_id') ?? '';
+    user = signal<User | null>(null);
+    userName = signal('');
+    userRole = signal('');
+    propertyName = signal('Sin propiedad');
+    propertySub = signal('');
+    properties = signal<UserProperty[]>([]);
+    propertyPickerOpen = signal(false);
+    activePropertyId = signal(localStorage.getItem('auth_hotel_id') ?? '');
 
     private readonly auth = inject(AuthService);
     private readonly hotels = inject(HotelService);
@@ -392,18 +391,18 @@ export class AppMenu implements OnInit {
 
     ngOnInit(): void {
         this.auth.currentUser$.subscribe((user) => {
-            this.user = user;
+            this.user.set(user);
             this.applyNavPermissions(user);
-            this.userName = user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : 'Usuario';
-            this.userRole = user?.position || user?.roles?.[0] || 'Miembro del equipo';
+            this.userName.set(user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : 'Usuario');
+            this.userRole.set(user?.position || user?.roles?.[0] || 'Miembro del equipo');
         });
 
         // Propiedades disponibles (selector) + propiedad activa (auth_hotel_id)
         this.organization.getMyProperties().subscribe({
             next: (props) => {
-                this.properties = props;
+                this.properties.set(props);
             },
-            error: () => { this.properties = []; }
+            error: () => { this.properties.set([]); }
         });
 
         // Propiedad activa: auth_hotel_id o primera asignada
@@ -412,34 +411,34 @@ export class AppMenu implements OnInit {
             ? this.hotels.getHotelById(myHotelId)
             : this.hotels.getHotels({ pageNumber: 1, pageSize: 1 }).pipe(map((page) => page.items[0] ?? null));
 
-        hotels$.pipe(delay(0)).subscribe({
+        hotels$.subscribe({
             next: (hotel: Hotel | null) => {
                 if (hotel) {
-                    this.propertyName = hotel.name;
+                    this.propertyName.set(hotel.name);
                     const location = [hotel.city, hotel.country].filter(Boolean).join(', ');
-                    this.propertySub = `${hotel.totalRooms || 0} habitaciones${location ? ` · ${location}` : ''}`;
+                    this.propertySub.set(`${hotel.totalRooms || 0} habitaciones${location ? ` · ${location}` : ''}`);
                 } else {
-                    this.propertySub = 'Sin propiedad configurada';
+                    this.propertySub.set('Sin propiedad configurada');
                 }
             },
             error: () => {
-                this.propertySub = 'Pendiente de cargar';
+                this.propertySub.set('Pendiente de cargar');
             }
         });
     }
 
     switchProperty(prop: UserProperty): void {
-        if (prop.propertyId === this.activePropertyId) {
-            this.propertyPickerOpen = false;
+        if (prop.propertyId === this.activePropertyId()) {
+            this.propertyPickerOpen.set(false);
             return;
         }
         this.auth.switchProperty(prop.propertyId).subscribe({
             next: () => {
-                this.propertyPickerOpen = false;
+                this.propertyPickerOpen.set(false);
                 window.location.reload();
             },
             error: () => {
-                this.propertyPickerOpen = false;
+                this.propertyPickerOpen.set(false);
             }
         });
     }

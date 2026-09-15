@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { map } from 'rxjs';
@@ -45,10 +45,10 @@ import { HotelService } from '@/app/core/services/hotel.service';
             </button>
 
             <div class="hos-topbar__user">
-                <div class="hos-topbar__avatar">{{ initials }}</div>
+                <div class="hos-topbar__avatar">{{ initials() }}</div>
                 <div class="hos-topbar__user-info">
-                    <span class="hos-topbar__user-name">{{ userName }}</span>
-                    <span class="hos-topbar__user-prop">{{ propertyName }}</span>
+                    <span class="hos-topbar__user-name">{{ userName() }}</span>
+                    <span class="hos-topbar__user-prop">{{ propertyName() }}</span>
                 </div>
                 <i class="pi pi-chevron-down hos-topbar__chevron"></i>
             </div>
@@ -116,18 +116,17 @@ import { HotelService } from '@/app/core/services/hotel.service';
 export class AppTopbar implements OnInit {
     layoutService = inject(LayoutService);
 
-    userName = '';
-    initials = '';
-    propertyName = '';
+    userName = signal('');
+    initials = signal('');
+    propertyName = signal('');
 
     private readonly auth = inject(AuthService);
     private readonly hotels = inject(HotelService);
-    private readonly cdr = inject(ChangeDetectorRef);
 
     ngOnInit(): void {
         this.auth.currentUser$.subscribe((user) => {
-            this.userName = user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : '';
-            this.initials = user?.firstName?.charAt(0) ?? 'U';
+            this.userName.set(user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : '');
+            this.initials.set(user?.firstName?.charAt(0) ?? 'U');
         });
 
         const myHotelId = localStorage.getItem('auth_hotel_id');
@@ -137,8 +136,7 @@ export class AppTopbar implements OnInit {
 
         hotels$.subscribe({
             next: (hotel) => {
-                this.propertyName = hotel?.name ?? '';
-                this.cdr.markForCheck();
+                this.propertyName.set(hotel?.name ?? '');
             }
         });
     }
