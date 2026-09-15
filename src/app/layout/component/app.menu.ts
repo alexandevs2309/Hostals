@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterLinkActive, Router } from '@angular/router';
 import { map } from 'rxjs';
+import { delay } from 'rxjs/operators';
 import { LayoutService } from '@/app/layout/service/layout.service';
 import { AuthService, User } from '@/app/core/services/auth.service';
 import { OrganizationService, UserProperty } from '@/app/core/services/organization.service';
@@ -411,7 +412,7 @@ export class AppMenu implements OnInit {
             ? this.hotels.getHotelById(myHotelId)
             : this.hotels.getHotels({ pageNumber: 1, pageSize: 1 }).pipe(map((page) => page.items[0] ?? null));
 
-        hotels$.subscribe({
+        hotels$.pipe(delay(0)).subscribe({
             next: (hotel: Hotel | null) => {
                 if (hotel) {
                     this.propertyName = hotel.name;

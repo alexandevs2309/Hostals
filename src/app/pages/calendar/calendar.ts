@@ -148,7 +148,7 @@ export class CalendarPage implements OnInit {
         });
 
         this.reservationsApi.getReservations(
-            { pageNumber: 1, pageSize: 2000 },
+            { pageNumber: 1, pageSize: 100 },
             { hotelId: id, from: toDateOnly(from), to: toDateOnly(to) }
         ).subscribe({
             next: (page) => {
