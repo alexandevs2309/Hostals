@@ -51,6 +51,7 @@ export class CalendarPage implements OnInit {
     hotelName = signal('');
     rooms = signal<CalendarRoom[]>([]);
     reservations = signal<Reservation[]>([]);
+    resizeOverrides = signal<Record<string, string>>({});
     loading = signal(true);
     error = signal<string | null>(null);
     moving = signal(false);
@@ -64,10 +65,22 @@ export class CalendarPage implements OnInit {
     days = computed(() => buildDays(this.windowStart(), this.DAYS_COUNT));
     todayIso = toDateOnly(new Date());
 
+    effective = computed(() => {
+        const ov = this.resizeOverrides();
+        if (!Object.keys(ov).length) return this.reservations();
+        return this.reservations().map((r) => {
+            const o = ov[r.id];
+            if (!o || o === r.checkOutDate) return r;
+            const nights = Math.max(1, Math.round((+new Date(o) - +new Date(r.checkInDate)) / 86400000));
+            return { ...r, checkOutDate: o, numberOfNights: nights };
+        });
+    });
+
     filtered = computed(() => {
         const f = this.filterStatus();
-        if (f === 'Todos') return this.reservations();
-        return this.reservations().filter((r) => r.status === f);
+        const src = this.effective();
+        if (f === 'Todos') return src;
+        return src.filter((r) => r.status === f);
     });
 
     fillResult = computed(() => fillBlocks(this.rooms(), this.days(), this.filtered()));
@@ -176,6 +189,10 @@ export class CalendarPage implements OnInit {
 
     statusLabel(s: string): string {
         return STATUS_LABEL[s] ?? s;
+    }
+
+    isActive(s: string): boolean {
+        return (ACTIVE_STATUSES as readonly string[]).includes(s);
     }
 
     blocksFor(roomId: string): CalendarBlock[] {
@@ -291,6 +308,92 @@ export class CalendarPage implements OnInit {
                 this.msgError.set(true);
             }
         });
+    }
+
+    // ── Resize (cambiar noches) ─────────────────────────────
+    private resizeId: string | null = null;
+    private resizeStartX = 0;
+    private resizeOrigNights = 0;
+    private resizeOrigCheckIn = '';
+    private resizePointerId = -1;
+
+    private resizeEl(e: Event): HTMLElement | null {
+        const el = e.currentTarget;
+        return el instanceof HTMLElement ? el : null;
+    }
+
+    startResize(e: PointerEvent, b: CalendarBlock): void {
+        if (this.moving() || !this.isActive(b.status)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        this.resizeId = b.reservationId;
+        this.resizeStartX = e.clientX;
+        this.resizeOrigNights = Math.max(1, b.nights);
+        this.resizeOrigCheckIn = b.checkIn;
+        this.resizePointerId = e.pointerId;
+        const el = this.resizeEl(e);
+        try { el?.setPointerCapture(e.pointerId); } catch { /* noop */ }
+    }
+
+    onResizeMove(e: PointerEvent, b: CalendarBlock): void {
+        if (this.resizeId !== b.reservationId) return;
+        e.preventDefault();
+        const delta = Math.round((e.clientX - this.resizeStartX) / DAY_W);
+        const nights = Math.max(1, this.resizeOrigNights + delta);
+        const checkOut = toDateOnly(addDays(new Date(this.resizeOrigCheckIn + 'T12:00:00'), nights));
+        this.resizeOverrides.update((m) => ({ ...m, [b.reservationId]: checkOut }));
+    }
+
+    onResizeEnd(e: PointerEvent, b: CalendarBlock): void {
+        if (this.resizeId !== b.reservationId) return;
+        const el = this.resizeEl(e);
+        try { el?.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+        this.resizeId = null;
+        this.resizePointerId = -1;
+
+        const cur = this.reservations().find((r) => r.id === b.reservationId);
+        const override = this.resizeOverrides()[b.reservationId];
+        if (!cur || !override || override === cur.checkOutDate) {
+            this.resizeOverrides.update((m) => { const n = { ...m }; delete n[b.reservationId]; return n; });
+            return;
+        }
+
+        if (this.fillResult().conflicts.has(b.reservationId)) {
+            this.resizeOverrides.update((m) => { const n = { ...m }; delete n[b.reservationId]; return n; });
+            this.msg.set('No se puede extender: la habitación está ocupada en esas noches.');
+            this.msgError.set(true);
+            return;
+        }
+
+        this.moving.set(true);
+        this.msg.set('');
+        this.msgError.set(false);
+
+        this.reservationsApi.move(cur.id, {
+            roomId: cur.roomId,
+            checkInDate: cur.checkInDate,
+            checkOutDate: override
+        }).subscribe({
+            next: (saved) => {
+                this.resizeOverrides.update((m) => { const n = { ...m }; delete n[saved.id]; return n; });
+                this.reservations.set(this.reservations().map((r) => (r.id === saved.id ? saved : r)));
+                this.moving.set(false);
+                this.msg.set(`Reserva ${saved.reservationNumber} actualizada a ${saved.numberOfNights} noche(s).`);
+            },
+            error: () => {
+                this.resizeOverrides.update((m) => { const n = { ...m }; delete n[cur.id]; return n; });
+                this.moving.set(false);
+                this.msg.set('No se pudo cambiar la fecha de salida. Reintenta.');
+                this.msgError.set(true);
+            }
+        });
+    }
+
+    resizeCancel(b: CalendarBlock): void {
+        if (this.resizeId !== b.reservationId) return;
+        this.resizeId = null;
+        this.resizePointerId = -1;
+        this.resizeOverrides.update((m) => { const n = { ...m }; delete n[b.reservationId]; return n; });
     }
 
     newReservation(): void {

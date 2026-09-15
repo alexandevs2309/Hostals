@@ -73,6 +73,14 @@
                 >
                     <div class="block__label">{{ b.guestName || 'Huésped' }}</div>
                     <div class="block__meta">{{ b.nights }} noches · {{ statusLabel(b.status) }}</div>
+                    <div
+                        class="block__resize"
+                        [class.is-disabled]="!isActive(b.status)"
+                        (pointerdown)="startResize($event, b)"
+                        (pointermove)="onResizeMove($event, b)"
+                        (pointerup)="onResizeEnd($event, b)"
+                        (pointercancel)="resizeCancel(b)"
+                        title="Arrastra para cambiar las noches"></div>
                 </div>
             </ng-container>
         </div>

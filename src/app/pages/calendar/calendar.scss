@@ -223,6 +223,7 @@
 }
 
 .cal-block {
+    position: relative;
     margin: 3px 1px;
     border-radius: 8px;
     padding: 0.25rem 0.4rem;
@@ -245,6 +246,40 @@
         opacity: 0.9;
         transform: rotate(1deg);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    }
+}
+
+.block__resize {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 10px;
+    cursor: ew-resize;
+    touch-action: none;
+    border-radius: 0 8px 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &::after {
+        content: '';
+        width: 3px;
+        height: 40%;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.55);
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+
+    &:hover::after {
+        opacity: 1;
+    }
+
+    &.is-disabled {
+        cursor: default;
+        pointer-events: none;
+        opacity: 0;
     }
 }
 
