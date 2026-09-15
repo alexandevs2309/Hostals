@@ -119,4 +119,14 @@ export class ReservationService {
     cancel(id: string, reason?: string): Observable<Reservation> {
         return this.http.patch<Reservation>(`${this.reservationsUrl}/${id}/cancel`, { reason });
     }
+
+    move(id: string, command: MoveReservationRequest): Observable<Reservation> {
+        return this.http.patch<Reservation>(`${this.reservationsUrl}/${id}/move`, command);
+    }
+}
+
+export interface MoveReservationRequest {
+    roomId: string;
+    checkInDate: string;
+    checkOutDate: string;
 }

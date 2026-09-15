@@ -25,6 +25,7 @@ const HOTEL_NAV: HosNavItem[] = [
     { label: 'Automatización',  icon: 'pi pi-bolt',       route: '/app/workflows'     },
     { separator: true,         label: 'Operación',        icon: '' },
     { label: 'Reservaciones',  icon: 'pi pi-calendar',    route: '/app/reservations'  },
+    { label: 'Calendario',     icon: 'pi pi-calendar-clock', route: '/app/calendar'   },
     { label: 'Habitaciones',   icon: 'pi pi-building',    route: '/app/rooms'         },
     { label: 'Tarifas',        icon: 'pi pi-money-bill',  route: '/app/rates'         },
     { label: 'Huéspedes',      icon: 'pi pi-user',        route: '/app/guests'        },

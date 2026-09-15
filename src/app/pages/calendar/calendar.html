@@ -1,0 +1,80 @@
+<div class="cal">
+    <div class="cal__toolbar">
+        <div class="cal__nav">
+            <button class="cal__btn" (click)="goPrev()" title="Anterior" [disabled]="loading()"><i class="pi pi-chevron-left"></i></button>
+            <button class="cal__btn cal__btn--today" (click)="goToday()" [disabled]="loading()">Hoy</button>
+            <button class="cal__btn" (click)="goNext()" title="Siguiente" [disabled]="loading()"><i class="pi pi-chevron-right"></i></button>
+            <span class="cal__range">{{ rangeLabel() }}</span>
+        </div>
+
+        <div class="cal__side">
+            <select class="cal__select" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)">
+                <option [ngValue]="s" *ngFor="let s of statusOptions">{{ s === 'Todos' ? 'Todas las reservas' : statusLabel(s) }}</option>
+            </select>
+            <button class="cal__btn cal__btn--primary" (click)="newReservation()">Nueva reserva</button>
+        </div>
+    </div>
+
+    <div class="cal__chips" *ngIf="!loading()">
+        <span class="chip chip--confirmed">Confirmadas {{ counts().confirmed }}</span>
+        <span class="chip chip--checkedin">En casa {{ counts().checkedIn }}</span>
+        <span class="chip chip--pending">Pendientes {{ counts().pending }}</span>
+        <span class="chip chip--cancelled">Canceladas {{ counts().cancelled }}</span>
+    </div>
+
+    <div class="cal__msg" *ngIf="msg()" [class.is-error]="msgError()">
+        {{ msg() }}
+    </div>
+
+    <ng-container *ngIf="loading()">
+        <div class="cal__loading">Cargando calendario…</div>
+    </ng-container>
+
+    <ng-container *ngIf="!loading() && error()">
+        <div class="cal__error">
+            <p>{{ error() }}</p>
+            <button class="cal__btn cal__btn--primary" (click)="retry()">Reintentar</button>
+        </div>
+    </ng-container>
+
+    <ng-container *ngIf="!loading() && !error() && rooms().length === 0">
+        <div class="cal__empty">No hay habitaciones configuradas en esta propiedad todavía.</div>
+    </ng-container>
+
+    <div class="cal__scroll" *ngIf="!loading() && !error() && rooms().length > 0">
+        <div #grid class="cal__grid" [ngStyle]="gridStyle()">
+            <div class="cell corner"></div>
+            <div
+                class="cell day" *ngFor="let d of days(); let i = index"
+                [class.is-today]="isToday(d)"
+                [class.is-weekend]="d.weekday === 'Dom' || d.weekday === 'Sáb'"
+                style="grid-row: 1; grid-column: {{ i + 2 }};">
+                <span class="day__w">{{ d.weekday }}</span>
+                <span class="day__n">{{ d.day }}</span>
+            </div>
+
+            <ng-container *ngFor="let room of rooms(); let row = index">
+                <div class="cell room" style="grid-row: {{ row + 2 }}; grid-column: 1">
+                    <span [title]="'Habitación ' + room.roomNumber">{{ room.roomNumber }}</span>
+                </div>
+                <div
+                    class="cell body" *ngFor="let d of days(); let i = index"
+                    [class.is-today]="isToday(d)"
+                    [class.is-weekend]="d.weekday === 'Dom' || d.weekday === 'Sáb'"
+                    style="grid-row: {{ row + 2 }}; grid-column: {{ i + 2 }}">
+                </div>
+                <div
+                    *ngFor="let b of blocksFor(room.id)"
+                    class="cal-block {{ blockClass(b) }}"
+                    style="grid-row: {{ row + 2 }}; grid-column: {{ b.start + 2 }} / {{ b.end + 2 }}"
+                    cdkDrag [cdkDragData]="b"
+                    (cdkDragEnded)="onDrop($event)"
+                    [title]="(b.guestName || 'Reserva') + ' · ' + statusLabel(b.status)"
+                >
+                    <div class="block__label">{{ b.guestName || 'Huésped' }}</div>
+                    <div class="block__meta">{{ b.nights }} noches · {{ statusLabel(b.status) }}</div>
+                </div>
+            </ng-container>
+        </div>
+    </div>
+</div>

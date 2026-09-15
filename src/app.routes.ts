@@ -18,6 +18,7 @@ import { MaintenancePage } from './app/pages/maintenance/maintenance';
 import { HousekeepingPage } from './app/pages/housekeeping/housekeeping';
 import { AnalyticsPage } from './app/pages/analytics/analytics';
 import { ReservationsPage } from './app/pages/reservations/reservations';
+import { CalendarPage } from './app/pages/calendar/calendar';
 import { GuestsPage } from './app/pages/guests/guests';
 import { FinancePage } from './app/pages/finance/finance';
 import { RatesPage } from './app/pages/rates/rates';
@@ -37,6 +38,7 @@ export const appRoutes: Routes = [
             { path: 'hotel', component: HotelPage },
             // ── Módulos PMS (en desarrollo) ──────────────────────────
             { path: 'reservations', component: ReservationsPage },
+            { path: 'calendar',     component: CalendarPage, data: { requiresHotel: true }, canActivate: [requiresHotelGuard] },
             { path: 'rooms',        component: RoomsPage },
             { path: 'rates',        component: RatesPage },
             { path: 'onboarding',   component: OnboardingPage },
