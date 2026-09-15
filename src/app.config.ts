@@ -3,7 +3,7 @@ import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core
 import { provideRouter, withComponentInputBinding, withEnabledBlockingInitialNavigation, withInMemoryScrolling } from '@angular/router';
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
-import { provideAnimations } from '@angular/platform-browser/animations';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './app/core/interceptors/auth.interceptor';
 import { errorInterceptor } from './app/core/interceptors/error.interceptor';
@@ -19,7 +19,7 @@ export const appConfig: ApplicationConfig = {
         ),
         provideHttpClient(withFetch(), withInterceptors([authInterceptor, responseTransformInterceptor, errorInterceptor])),
         provideZonelessChangeDetection(),
-        provideAnimations(),
+        provideNoopAnimations(),
         providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark', primary: 'teal' } } })
     ]
 };
