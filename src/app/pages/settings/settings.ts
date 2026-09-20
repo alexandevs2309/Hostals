@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { HotelService, Hotel } from '@/app/core/services/hotel.service';
+import { HotelService, Hotel, NoHotelConfiguredError } from '@/app/core/services/hotel.service';
 
 const MODULE_LABELS: Record<string, string> = {
     PMS: 'PMS',
@@ -72,22 +72,16 @@ export class SettingsPage implements OnInit {
     }
 
     private resolveHotel(): void {
-        const stored = localStorage.getItem('auth_hotel_id');
-        if (stored) {
-            this.loadHotel(stored);
-            return;
-        }
-        this.hotels.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-            next: (page) => {
-                const hotel = page.items[0];
-                if (hotel) {
-                    this.loadHotel(hotel.id);
-                } else {
+        this.hotels.resolveActiveHotel().subscribe({
+            next: (hotel) => this.loadHotel(hotel.id),
+            error: (err) => {
+                if (err instanceof NoHotelConfiguredError) {
                     this.error.set('No hay ninguna propiedad configurada todavía.');
                     this.loading.set(false);
+                } else {
+                    this.fail('No se pudo cargar la configuración.');
                 }
-            },
-            error: () => this.fail('No se pudo cargar la configuración.')
+            }
         });
     }
 

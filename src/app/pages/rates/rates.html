@@ -132,7 +132,7 @@
                 <div class="rc-modal" (click)="$event.stopPropagation()">
                     <div class="rc-modal__head">
                         <h3>{{ cell.roomTypeName }} · {{ cell.date }}</h3>
-                        <button class="rc-modal__x" (click)="showEdit.set(false)"><i class="pi pi-times"></i></button>
+                        <button class="rc-modal__x" (click)="showEdit.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                     </div>
                     <div class="rc-modal__body">
                         <label class="rc-field">
@@ -167,7 +167,7 @@
             <div class="rc-modal" (click)="$event.stopPropagation()">
                 <div class="rc-modal__head">
                     <h3>Aplicar tarifa a un rango</h3>
-                    <button class="rc-modal__x" (click)="showBulk.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="rc-modal__x" (click)="showBulk.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="rc-modal__body">
                     <label class="rc-field">
@@ -212,7 +212,7 @@
             <div class="rc-modal rc-modal--wide" (click)="$event.stopPropagation()">
                 <div class="rc-modal__head">
                     <h3>Planes de tarifas</h3>
-                    <button class="rc-modal__x" (click)="showPlans.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="rc-modal__x" (click)="showPlans.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="rc-modal__body">
                     <div class="rc-plans">
@@ -301,7 +301,7 @@
             <div class="rc-modal" (click)="$event.stopPropagation()">
                 <div class="rc-modal__head">
                     <h3>Asignar plan a tipos de habitación</h3>
-                    <button class="rc-modal__x" (click)="showAssign.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="rc-modal__x" (click)="showAssign.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="rc-modal__body">
                     <p class="rc-hint">Selecciona los tipos que usarán este plan. Desmarcar todos deja el tipo sin plan.</p>

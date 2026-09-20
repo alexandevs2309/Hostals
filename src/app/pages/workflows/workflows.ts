@@ -1,7 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HotelService } from '@/app/core/services/hotel.service';
+import { ConfirmationService } from 'primeng/api';
+import { HotelService, NoHotelConfiguredError } from '@/app/core/services/hotel.service';
 import { ReservationService, Reservation } from '@/app/core/services/reservation.service';
 import {
   AutomationService,
@@ -21,6 +22,7 @@ export class WorkflowsPage implements OnInit {
   private hotelsApi = inject(HotelService);
   private automationApi = inject(AutomationService);
   private reservationsApi = inject(ReservationService);
+  private confirmation = inject(ConfirmationService);
 
   readonly placeholders = '{Hotel} {Huesped} {Folio} {Habitacion} {TipoHabitacion} {Llegada} {Salida} {Noches} {Total}';
 
@@ -61,28 +63,15 @@ export class WorkflowsPage implements OnInit {
   }
 
   private resolveHotel(): void {
-    const stored = localStorage.getItem('auth_hotel_id');
-    const onHotel = (hotel: { id: string; name: string }): void => {
-      this.hotelId.set(hotel.id);
-      this.hotelName.set(hotel.name);
-      this.load();
-    };
-
-    if (stored) {
-      this.hotelsApi.getHotelById(stored).subscribe({
-        next: onHotel,
-        error: () => this.fail('No se pudo cargar la propiedad.')
-      });
-      return;
-    }
-
-    this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-      next: (page) => {
-        const hotel = page.items[0];
-        if (hotel) onHotel(hotel);
-        else this.fail('No hay ninguna propiedad configurada todavía.');
+    this.hotelsApi.resolveActiveHotel().subscribe({
+      next: (hotel) => {
+        this.hotelId.set(hotel.id);
+        this.hotelName.set(hotel.name);
+        this.load();
       },
-      error: () => this.fail('No se pudo cargar la propiedad.')
+      error: (err) => this.fail(err instanceof NoHotelConfiguredError
+        ? 'No hay ninguna propiedad configurada todavía.'
+        : 'No se pudo cargar la propiedad.')
     });
   }
 
@@ -227,10 +216,18 @@ export class WorkflowsPage implements OnInit {
   }
 
   deleteRule(rule: AutomationRule): void {
-    if (!confirm(`¿Eliminar la regla "${rule.name}"? Los mensajes ya enviados se conservan.`)) return;
-    this.automationApi.deleteRule(rule.id).subscribe({
-      next: () => this.reloadRules(),
-      error: () => this.formMsg.set({ ok: false, text: 'No se pudo eliminar la regla.' })
+    this.confirmation.confirm({
+      message: `¿Eliminar la regla "${rule.name}"? Los mensajes ya enviados se conservan.`,
+      header: 'Eliminar regla',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.automationApi.deleteRule(rule.id).subscribe({
+          next: () => this.reloadRules(),
+          error: () => this.formMsg.set({ ok: false, text: 'No se pudo eliminar la regla.' })
+        });
+      }
     });
   }
 

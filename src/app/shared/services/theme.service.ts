@@ -85,7 +85,6 @@ export class ThemeService {
 
         const root = document.documentElement;
         root.style.setProperty('--hos-brand', palette.hex);
-        root.style.setProperty('--hos-accent-rgb', palette.rgb);
     }
 
     toggleDarkMode(force?: boolean): void {

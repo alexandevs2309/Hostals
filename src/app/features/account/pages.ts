@@ -6,6 +6,7 @@ import { GosAuthCard } from '@/app/shared/components/auth-card';
 import { OnboardingStep1Data, OnboardingStep2Data } from '@/app/shared/services/onboarding.service';
 import { AuthService } from '@/app/core/services/auth.service';
 import { HotelService } from '@/app/core/services/hotel.service';
+import { I18nService } from '@/app/shared/services/i18n.service';
 
 // ─── Validators ──────────────────────────────────────────────────────────────
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
@@ -51,36 +52,36 @@ const REGISTER_MODULES = [
     template: `
         <gos-auth-card
             icon="pi pi-lock"
-            eyebrow="Bienvenido de nuevo"
-            title="Inicia sesión en Hospitality OS"
-            subtitle="Accede a la plataforma de tu hospitalidad."
+            [eyebrow]="i18n.t('auth.login.eyebrow')"
+            [title]="i18n.tp('auth.login.title', { app: i18n.t('brand.hospitality') })"
+            [subtitle]="i18n.t('auth.login.subtitle')"
         >
             <form (ngSubmit)="submit()">
                 <div class="gos-field">
-                    <label for="login-email">Email</label>
+                    <label for="login-email">{{ i18n.t('auth.login.email') }}</label>
                     <input id="login-email" type="email" name="email" class="gos-input" placeholder="tu@hotel.com" [(ngModel)]="email" />
                 </div>
                 <div class="gos-field">
-                    <label for="login-pass">Contraseña</label>
+                    <label for="login-pass">{{ i18n.t('auth.login.password') }}</label>
                     <input id="login-pass" type="password" name="password" class="gos-input" placeholder="••••••••" [(ngModel)]="password" />
                     <div style="text-align: right; margin-top: 6px">
-                        <a class="gos-link" routerLink="/account/forgot-password">¿Olvidaste tu contraseña?</a>
+                        <a class="gos-link" routerLink="/account/forgot-password">{{ i18n.t('auth.login.forgot') }}</a>
                     </div>
                 </div>
                 @if (errorMessage) {
                     <div class="gos-error"><i class="pi pi-exclamation-circle"></i> {{ errorMessage }}</div>
                 }
                 <button type="submit" class="gos-btn gos-btn--primary gos-btn--block" [disabled]="loading">
-                    @if (loading) { <span class="gos-spinner"></span> } Entrando <i class="pi pi-arrow-right"></i>
+                    @if (loading) { <span class="gos-spinner"></span> } {{ i18n.t('auth.login.submit') }} <i class="pi pi-arrow-right"></i>
                 </button>
             </form>
-            <div class="auth-sep">o continúa con</div>
+            <div class="auth-sep">{{ i18n.t('auth.login.sep') }}</div>
             <div class="auth-grid-2">
                 <button type="button" class="gos-btn gos-btn--ghost gos-btn--block"><i class="pi pi-google"></i> Google</button>
                 <button type="button" class="gos-btn gos-btn--ghost gos-btn--block"><i class="pi pi-apple"></i> Apple</button>
             </div>
             <p class="auth-foot">
-                ¿Aún no tienes cuenta? <a class="gos-link" routerLink="/account/register">Crea una gratis</a>
+                {{ i18n.t('auth.login.noAccount') }} <a class="gos-link" routerLink="/account/register">{{ i18n.t('auth.login.create') }}</a>
             </p>
         </gos-auth-card>
     `
@@ -91,13 +92,15 @@ export class LoginPage {
     errorMessage = '';
     loading = false;
 
+    readonly i18n = inject(I18nService);
+
     private readonly auth = inject(AuthService);
     private readonly router = inject(Router);
     private readonly cdr = inject(ChangeDetectorRef);
 
     submit(): void {
         if (!this.email || !this.password) {
-            this.errorMessage = 'Introduce tu email y contraseña.';
+            this.errorMessage = this.i18n.t('auth.login.missing');
             return;
         }
 

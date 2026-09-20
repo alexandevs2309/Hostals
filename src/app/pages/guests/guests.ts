@@ -2,8 +2,9 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { HotelService } from '@/app/core/services/hotel.service';
+import { HotelService, NoHotelConfiguredError } from '@/app/core/services/hotel.service';
 import { GuestService, Guest, GuestReservation } from '@/app/core/services/guest.service';
+import { formatMoney } from '@/app/shared/utils/money';
 
 @Component({
     selector: 'app-guests',
@@ -61,7 +62,7 @@ export class GuestsPage implements OnInit {
         const inHouse = list.filter((g) => g.activeReservations > 0).length;
         const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
         const recent = list.filter((g) => new Date(g.createdAt).getTime() >= cutoff).length;
-        return { total: list.length, vip, withStays, inHouse, recent };
+        return { total: this.totalCount(), vip, withStays, inHouse, recent };
     });
 
     filtered = computed(() => {
@@ -91,28 +92,15 @@ export class GuestsPage implements OnInit {
     }
 
     private resolveHotel(): void {
-        const stored = localStorage.getItem('auth_hotel_id');
-        const onHotel = (hotel: { id: string; name: string }): void => {
-            this.hotelId.set(hotel.id);
-            this.hotelName.set(hotel.name);
-            this.load();
-        };
-
-        if (stored) {
-            this.hotelsApi.getHotelById(stored).subscribe({
-                next: onHotel,
-                error: () => this.fail('No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
-            });
-            return;
-        }
-
-        this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-            next: (page) => {
-                const hotel = page.items[0];
-                if (hotel) onHotel(hotel);
-                else this.fail('No hay ninguna propiedad configurada todavía.');
+        this.hotelsApi.resolveActiveHotel().subscribe({
+            next: (hotel) => {
+                this.hotelId.set(hotel.id);
+                this.hotelName.set(hotel.name);
+                this.load();
             },
-            error: () => this.fail('No se pudo cargar la propiedad.')
+            error: (err) => this.fail(err instanceof NoHotelConfiguredError
+                ? 'No hay ninguna propiedad configurada todavía.'
+                : 'No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
         });
     }
 
@@ -123,7 +111,7 @@ export class GuestsPage implements OnInit {
         this.error.set(null);
         this.guestsApi.getGuests(
             { pageNumber: this.page(), pageSize: this.pageSize },
-            { hotelId: id }
+            { hotelId: id, search: this.search().trim() || undefined }
         ).subscribe({
             next: (page) => {
                 this.guests.set(page.items);
@@ -146,6 +134,11 @@ export class GuestsPage implements OnInit {
         const id = this.hotelId();
         if (id) this.load();
         else this.resolveHotel();
+    }
+
+    onSearchChange(): void {
+        this.page.set(1);
+        this.load();
     }
 
     setTier(t: string): void {
@@ -174,7 +167,7 @@ export class GuestsPage implements OnInit {
     }
 
     fmtMoney(n: number): string {
-        return '$' + (n ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return formatMoney(n);
     }
 
     private act(title: string, fn: () => Promise<unknown>): void {

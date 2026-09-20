@@ -146,12 +146,14 @@
     width: 240px;
 }
 
+.rv-table { overflow-x: auto; }
 .rv-table__head, .rv-table__row {
     display: grid;
     grid-template-columns: 130px 1.3fr 110px 100px 100px 54px 112px 90px 170px;
     gap: .6rem;
     align-items: center;
     padding: .65rem 1.1rem;
+    min-width: 900px;
 }
 
 .rv-table__head {

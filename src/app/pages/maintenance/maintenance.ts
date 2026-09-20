@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin, firstValueFrom } from 'rxjs';
+import { ConfirmationService } from 'primeng/api';
 import { RoomService } from '@/app/core/services/room.service';
 import { DashboardService, MaintenanceTicketDto } from '@/app/core/services/dashboard.service';
 import { HotelService } from '@/app/core/services/hotel.service';
@@ -32,6 +33,7 @@ export class MaintenancePage implements OnInit {
     private dashboardApi = inject(DashboardService);
     private roomsApi = inject(RoomService);
     private hotelsApi = inject(HotelService);
+    private confirmation = inject(ConfirmationService);
 
     hotelId = signal<string | null>(null);
     hotelName = signal('');
@@ -73,25 +75,10 @@ export class MaintenancePage implements OnInit {
     }
 
     private resolveHotel(): void {
-        const stored = localStorage.getItem('auth_hotel_id');
-        if (stored) {
-            this.hotelsApi.getHotelById(stored).subscribe({
-                next: (h) => {
-                    this.hotelId.set(h.id);
-                    this.hotelName.set(h.name);
-                    this.load();
-                },
-                error: () => this.load()
-            });
-            return;
-        }
-        this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-            next: (page) => {
-                const h = page.items[0];
-                if (h) {
-                    this.hotelId.set(h.id);
-                    this.hotelName.set(h.name);
-                }
+        this.hotelsApi.resolveActiveHotel().subscribe({
+            next: (h) => {
+                this.hotelId.set(h.id);
+                this.hotelName.set(h.name);
                 this.load();
             },
             error: () => this.load()
@@ -124,6 +111,19 @@ export class MaintenancePage implements OnInit {
     }
 
     complete(t: MaintenanceTicketDto): void {
+        this.confirmation.confirm({
+            message: `¿Marcar como completado el ticket de la habitación ${t.room}?`,
+            header: 'Completar ticket',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Completar',
+            rejectLabel: 'Cancelar',
+            accept: () => {
+                this.completeTicket(t);
+            }
+        });
+    }
+
+    private completeTicket(t: MaintenanceTicketDto): void {
         if (!t.roomId) return;
         this.busy.set(true);
         this.msg.set('');

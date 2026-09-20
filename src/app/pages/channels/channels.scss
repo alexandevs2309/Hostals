@@ -365,6 +365,26 @@
         background: var(--surface-hover);
     }
 
+    &__mode {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+
+        &--real {
+            background: rgba(34, 197, 94, 0.15);
+            color: #15803d;
+        }
+
+        &--sim {
+            background: rgba(234, 179, 8, 0.15);
+            color: #a16207;
+        }
+    }
+
     &__gateway-name {
         font-weight: 700;
         font-size: 0.85rem;

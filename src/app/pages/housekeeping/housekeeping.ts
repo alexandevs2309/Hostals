@@ -40,25 +40,10 @@ export class HousekeepingPage implements OnInit {
     }
 
     private resolveHotel(): void {
-        const stored = localStorage.getItem('auth_hotel_id');
-        if (stored) {
-            this.hotelsApi.getHotelById(stored).subscribe({
-                next: (h) => {
-                    this.hotelId.set(h.id);
-                    this.hotelName.set(h.name);
-                    this.load();
-                },
-                error: () => this.load()
-            });
-            return;
-        }
-        this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-            next: (page) => {
-                const h = page.items[0];
-                if (h) {
-                    this.hotelId.set(h.id);
-                    this.hotelName.set(h.name);
-                }
+        this.hotelsApi.resolveActiveHotel().subscribe({
+            next: (h) => {
+                this.hotelId.set(h.id);
+                this.hotelName.set(h.name);
                 this.load();
             },
             error: () => this.load()

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DragDropModule, CdkDragEnd } from '@angular/cdk/drag-drop';
-import { HotelService } from '@/app/core/services/hotel.service';
+import { HotelService, NoHotelConfiguredError } from '@/app/core/services/hotel.service';
 import { RoomService, Room } from '@/app/core/services/room.service';
 import { ReservationService, Reservation } from '@/app/core/services/reservation.service';
 import {
@@ -122,28 +122,15 @@ export class CalendarPage implements OnInit {
     }
 
     private resolveHotel(): void {
-        const stored = localStorage.getItem('auth_hotel_id');
-        const onHotel = (hotel: { id: string; name: string }): void => {
-            this.hotelId.set(hotel.id);
-            this.hotelName.set(hotel.name);
-            this.load();
-        };
-
-        if (stored) {
-            this.hotelsApi.getHotelById(stored).subscribe({
-                next: onHotel,
-                error: () => this.fail('No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
-            });
-            return;
-        }
-
-        this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-            next: (page) => {
-                const hotel = page.items[0];
-                if (hotel) onHotel(hotel);
-                else this.fail('No hay ninguna propiedad configurada todavía.');
+        this.hotelsApi.resolveActiveHotel().subscribe({
+            next: (hotel) => {
+                this.hotelId.set(hotel.id);
+                this.hotelName.set(hotel.name);
+                this.load();
             },
-            error: () => this.fail('No se pudo cargar la propiedad.')
+            error: (err) => this.fail(err instanceof NoHotelConfiguredError
+                ? 'No hay ninguna propiedad configurada todavía.'
+                : 'No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
         });
     }
 

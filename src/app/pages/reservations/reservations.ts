@@ -1,10 +1,12 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
-import { HotelService } from '@/app/core/services/hotel.service';
+import { catchError, firstValueFrom, forkJoin, map, of } from 'rxjs';
+import { ConfirmationService } from 'primeng/api';
+import { HotelService, NoHotelConfiguredError } from '@/app/core/services/hotel.service';
 import { RoomService, Room } from '@/app/core/services/room.service';
 import { ReservationService, Reservation } from '@/app/core/services/reservation.service';
+import { formatMoney } from '@/app/shared/utils/money';
 
 const STATUS_LABEL: Record<string, string> = {
     Pending: 'Pendiente',
@@ -28,6 +30,7 @@ export class ReservationsPage implements OnInit {
     private reservationsApi = inject(ReservationService);
     private hotelsApi = inject(HotelService);
     private roomsApi = inject(RoomService);
+    private confirmation = inject(ConfirmationService);
 
     hotelId = signal<string | null>(null);
     hotelName = signal('');
@@ -72,20 +75,7 @@ export class ReservationsPage implements OnInit {
         guestDocumentNumber: ''
     };
 
-    counts = computed(() => {
-        let confirmed = 0, checkedIn = 0, pending = 0, cancelled = 0, checkedOut = 0, noShow = 0;
-        for (const r of this.reservations()) {
-            switch (r.status) {
-                case 'Confirmed': confirmed++; break;
-                case 'CheckedIn': checkedIn++; break;
-                case 'Pending': pending++; break;
-                case 'Cancelled': cancelled++; break;
-                case 'CheckedOut': checkedOut++; break;
-                case 'NoShow': noShow++; break;
-            }
-        }
-        return { confirmed, checkedIn, pending, cancelled, checkedOut, noShow };
-    });
+    counts = signal({ confirmed: 0, checkedIn: 0, pending: 0, cancelled: 0, checkedOut: 0, noShow: 0 });
 
     filtered = computed(() => {
         const q = this.search().trim().toLowerCase();
@@ -115,28 +105,15 @@ export class ReservationsPage implements OnInit {
     }
 
     private resolveHotel(): void {
-        const stored = localStorage.getItem('auth_hotel_id');
-        const onHotel = (hotel: { id: string; name: string }): void => {
-            this.hotelId.set(hotel.id);
-            this.hotelName.set(hotel.name);
-            this.load();
-        };
-
-        if (stored) {
-            this.hotelsApi.getHotelById(stored).subscribe({
-                next: onHotel,
-                error: () => this.fail('No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
-            });
-            return;
-        }
-
-        this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-            next: (page) => {
-                const hotel = page.items[0];
-                if (hotel) onHotel(hotel);
-                else this.fail('No hay ninguna propiedad configurada todavía.');
+        this.hotelsApi.resolveActiveHotel().subscribe({
+            next: (hotel) => {
+                this.hotelId.set(hotel.id);
+                this.hotelName.set(hotel.name);
+                this.load();
             },
-            error: () => this.fail('No se pudo cargar la propiedad.')
+            error: (err) => this.fail(err instanceof NoHotelConfiguredError
+                ? 'No hay ninguna propiedad configurada todavía.'
+                : 'No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
         });
     }
 
@@ -147,7 +124,11 @@ export class ReservationsPage implements OnInit {
         this.error.set(null);
         this.reservationsApi.getReservations(
             { pageNumber: this.page(), pageSize: this.pageSize },
-            { hotelId: id, status: undefined, search: undefined }
+            {
+                hotelId: id,
+                status: this.filterStatus() === 'Todos' ? undefined : this.filterStatus(),
+                search: this.search().trim() || undefined
+            }
         ).subscribe({
             next: (page) => {
                 this.reservations.set(page.items);
@@ -157,6 +138,7 @@ export class ReservationsPage implements OnInit {
                     error: () => {}
                 });
                 this.loading.set(false);
+                this.loadCounts();
             },
             error: () => {
                 this.loading.set(false);
@@ -186,6 +168,35 @@ export class ReservationsPage implements OnInit {
 
     setFilter(s: string): void {
         this.filterStatus.set(s);
+        this.page.set(1);
+        this.load();
+    }
+
+    onSearchChange(): void {
+        this.page.set(1);
+        this.load();
+    }
+
+    private loadCounts(): void {
+        const id = this.hotelId();
+        if (!id) return;
+        const statuses = ['Confirmed', 'CheckedIn', 'Pending', 'Cancelled', 'CheckedOut', 'NoShow'] as const;
+        forkJoin(
+            statuses.map((status) =>
+                this.reservationsApi
+                    .getReservations({ pageNumber: 1, pageSize: 1 }, { hotelId: id, status })
+                    .pipe(
+                        map((page) => ({ status, count: page.totalCount })),
+                        catchError(() => of({ status, count: 0 }))
+                    )
+            )
+        ).subscribe((rows) => {
+            const base: Record<string, number> = { confirmed: 0, checkedIn: 0, pending: 0, cancelled: 0, checkedOut: 0, noShow: 0 };
+            for (const row of rows) {
+                base[row.status.toLowerCase()] = row.count;
+            }
+            this.counts.set({ confirmed: base['confirmed'], checkedIn: base['checkedIn'], pending: base['pending'], cancelled: base['cancelled'], checkedOut: base['checkedOut'], noShow: base['noShow'] });
+        });
     }
 
     fmtDate(d: string): string {
@@ -194,7 +205,7 @@ export class ReservationsPage implements OnInit {
     }
 
     fmtMoney(n: number): string {
-        return '$' + (n ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return formatMoney(n);
     }
 
     // ── Acciones ───────────────────────────────────────────
@@ -221,7 +232,14 @@ export class ReservationsPage implements OnInit {
     }
 
     checkOut(r: Reservation): void {
-        this.act('Check-out registrado. La habitación está pendiente de limpieza.', () => firstValueFrom(this.reservationsApi.checkOut(r.id)));
+        this.confirmation.confirm({
+            message: `¿Registrar la salida de ${r.guestName} de la habitación ${r.roomNumber}?`,
+            header: 'Registrar check-out',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Check-out',
+            rejectLabel: 'Cancelar',
+            accept: () => this.act('Check-out registrado. La habitación está pendiente de limpieza.', () => firstValueFrom(this.reservationsApi.checkOut(r.id)))
+        });
     }
 
     openCancel(r: Reservation): void {

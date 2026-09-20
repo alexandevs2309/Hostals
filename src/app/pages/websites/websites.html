@@ -1,0 +1,295 @@
+<div class="ws-page">
+
+    <!-- ── Cabecera ─────────────────────────────────────── -->
+    <div class="ws-head">
+        <div>
+            <h1 class="ws-head__title">Sitios Web</h1>
+            <p class="ws-head__sub">{{ hotelName() }}</p>
+        </div>
+        <div class="ws-head__actions">
+            @if (msg()) {
+                <span class="ws-toast" [class.ws-toast--err]="msgError()">
+                    <i class="pi" [class.pi-check-circle]="!msgError()" [class.pi-exclamation-circle]="msgError()"></i>
+                    {{ msg() }}
+                </span>
+            }
+            @if (!loading() && !error()) {
+                <button class="ws-btn ws-btn--primary" (click)="openCreate()">
+                    <i class="pi pi-plus"></i> Nuevo sitio web
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- ── KPIs ─────────────────────────────────────────── -->
+    @if (!loading() && !error()) {
+        <div class="ws-kpis">
+            <div class="ws-kpi">
+                <span class="ws-kpi__label">Total</span>
+                <span class="ws-kpi__value">{{ stats().total }}</span>
+            </div>
+            <div class="ws-kpi ws-kpi--ok">
+                <span class="ws-kpi__label">Publicados</span>
+                <span class="ws-kpi__value">{{ stats().published }}</span>
+            </div>
+            <div class="ws-kpi ws-kpi--warn">
+                <span class="ws-kpi__label">Borradores</span>
+                <span class="ws-kpi__value">{{ stats().draft }}</span>
+            </div>
+            <div class="ws-kpi">
+                <span class="ws-kpi__label">Dominios propios</span>
+                <span class="ws-kpi__value">{{ stats().custom }}</span>
+            </div>
+            <div class="ws-kpi">
+                <span class="ws-kpi__label">Páginas</span>
+                <span class="ws-kpi__value">{{ stats().totalPages }}</span>
+            </div>
+        </div>
+    }
+
+    <!-- ── Estados ──────────────────────────────────────── -->
+    @if (loading()) {
+        <div class="ws-panel ws-skel">
+            <div class="ws-row ws-row--skel"></div>
+            <div class="ws-row ws-row--skel"></div>
+            <div class="ws-row ws-row--skel"></div>
+            <div class="ws-row ws-row--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="ws-panel ws-empty">
+            <div class="ws-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+            <h3>{{ error() }}</h3>
+            <button class="ws-btn ws-btn--ghost" (click)="retry()"><i class="pi pi-refresh"></i> Reintentar</button>
+        </div>
+    } @else if (!websites().length) {
+        <div class="ws-panel ws-empty">
+            <div class="ws-empty__icon"><i class="pi pi-globe"></i></div>
+            <h3>No hay sitios web</h3>
+            @if (hotelId()) {
+                <p>Ningún sitio web para {{ hotelName() }} todavía. Crea el primero.</p>
+            }
+        </div>
+    } @else {
+        <div class="ws-panel ws-table">
+            <div class="ws-table__head">
+                <div class="ws-c ws-c--name">Sitio</div>
+                <div class="ws-c ws-c--slug">URL / Slug</div>
+                <div class="ws-c ws-c--theme">Tema</div>
+                <div class="ws-c ws-c--domain">Dominio</div>
+                <div class="ws-c ws-c--status">Estado</div>
+                <div class="ws-c ws-c--acts">Acciones</div>
+            </div>
+            @for (w of websites(); track w.id) {
+                <div class="ws-table__row">
+                    <div class="ws-c ws-c--name">
+                        <span class="ws-name"><i class="pi pi-globe"></i> {{ w.name }}</span>
+                    </div>
+                    <div class="ws-c ws-c--slug">
+                        <code class="ws-slug">/{{ w.slug }}</code>
+                    </div>
+                    <div class="ws-c ws-c--theme">{{ themeLabel(w.theme) }}</div>
+                    <div class="ws-c ws-c--domain">
+                        @if (w.customDomain) {
+                            <span class="ws-domain" [class.ws-domain--ok]="w.isCustomDomainVerified">
+                                <i class="pi" [class.pi-check-circle]="w.isCustomDomainVerified" [class.pi-exclamation-circle]="!w.isCustomDomainVerified"></i>
+                                {{ w.customDomain }}
+                            </span>
+                        } @else {
+                            <span class="ws-hint">—</span>
+                        }
+                    </div>
+                    <div class="ws-c ws-c--status">
+                        <span class="ws-badge" [class.ws-badge--pub]="w.isPublished">
+                            <i class="pi" [class.pi-check]="w.isPublished" [class.pi-pencil]="!w.isPublished"></i>
+                            {{ w.isPublished ? 'Publicado' : 'Borrador' }}
+                        </span>
+                    </div>
+                    <div class="ws-c ws-c--acts">
+                        <button class="ws-btn ws-btn--sm ws-btn--primary" [disabled]="busy()" (click)="openEditor(w)">
+                            <i class="pi pi-pencil"></i> Editar
+                        </button>
+                        @if (w.isPublished) {
+                            <a class="ws-btn ws-btn--sm ws-btn--primary" [routerLink]="['/s', w.slug]" target="_blank" rel="noopener">
+                                <i class="pi pi-external-link"></i> Ver
+                            </a>
+                        }
+                        @if (!w.isPublished) {
+                            <button class="ws-btn ws-btn--sm ws-btn--ok" [disabled]="busy()" (click)="setPublished(w, true)">
+                                <i class="pi pi-globe"></i> Publicar
+                            </button>
+                        } @else {
+                            <button class="ws-btn ws-btn--sm ws-btn--ghost" [disabled]="busy()" (click)="setPublished(w, false)">
+                                <i class="pi pi-pencil"></i> Despublicar
+                            </button>
+                        }
+                        <button class="ws-btn ws-btn--sm ws-btn--danger" [disabled]="busy()" (click)="remove(w)">
+                            <i class="pi pi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- ── Modal: editor de páginas y secciones ─────────── -->
+    @if (showEditor()) {
+        <div class="ws-overlay" (click)="closeEditor()">
+            <div class="ws-modal ws-modal--wide" (click)="$event.stopPropagation()">
+                <div class="ws-modal__head ws-head--editor">
+                    <h3><i class="pi pi-pencil"></i> Editar {{ editingSite()?.name }}</h3>
+                    <button class="ws-modal__x" (click)="closeEditor()" aria-label="Cerrar"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="ws-editor">
+                    <!-- Páginas -->
+                    <div class="ws-editor__block">
+                        <div class="ws-editor__block-head">
+                            <h4>Páginas</h4>
+                            <button class="ws-btn ws-btn--sm ws-btn--ghost" (click)="addPage()">
+                                <i class="pi pi-plus"></i> Página
+                            </button>
+                        </div>
+                        @for (page of sitePages(); track page.id) {
+                            <div class="ws-page">
+                                <div class="ws-page__row">
+                                    <span class="ws-page__handle"><i class="pi pi-bars"></i></span>
+                                    @if (page.isHome) {
+                                        <span class="ws-badge">Inicio</span>
+                                    }
+                                    <span class="ws-page__title">{{ page.title }}</span>
+                                    <code class="ws-page__path">{{ page.path }}</code>
+                                    <span class="ws-page__spacer"></span>
+                                    <button class="ws-btn ws-btn--sm" [disabled]="page.sortOrder === 1" (click)="movePage(page, -1)" aria-label="Subir">
+                                        <i class="pi pi-chevron-up"></i>
+                                    </button>
+                                    <button class="ws-btn ws-btn--sm" [disabled]="page.sortOrder === sitePages().length" (click)="movePage(page, 1)" aria-label="Bajar">
+                                        <i class="pi pi-chevron-down"></i>
+                                    </button>
+                                    <button class="ws-btn ws-btn--sm ws-btn--ok" (click)="toggleMenu(page)" [attr.title]="page.showInMenu ? 'En menú' : 'Fuera del menú'">
+                                        <i class="pi" [class.pi-bookmark]="page.showInMenu" [class.pi-bookmark-fill]="!page.showInMenu"></i>
+                                    </button>
+                                    <button class="ws-btn ws-btn--sm" (click)="expandedPage.set(page.id === expandedPage() ? null : page.id)">
+                                        <i class="pi" [class.pi-chevron-right]="page.id !== expandedPage()" [class.pi-chevron-down]="page.id === expandedPage()"></i>
+                                    </button>
+                                    <button class="ws-btn ws-btn--sm ws-btn--danger" [disabled]="page.isHome" (click)="removePage(page)">
+                                        <i class="pi pi-trash"></i>
+                                    </button>
+                                </div>
+
+                                @if (page.id === expandedPage()) {
+                                    <div class="ws-page__body">
+                                        <label class="ws-field ws-field--full">
+                                            <span>Título</span>
+                                            <input [(ngModel)]="page.title" placeholder="Título de la página" />
+                                        </label>
+                                        <label class="ws-field ws-field--full">
+                                            <span>Ruta (URL)</span>
+                                            <input [(ngModel)]="page.path" placeholder="/habitaciones" />
+                                        </label>
+                                        <label class="ws-field ws-field--full">
+                                            <span>Descripción meta (SEO)</span>
+                                            <input [(ngModel)]="page.metaDescription" placeholder="Resumen para buscadores (opcional)" />
+                                        </label>
+                                        <div class="ws-editor__block-head ws-editor__block-head--sub">
+                                            <h4>Secciones</h4>
+                                            <button class="ws-btn ws-btn--sm ws-btn--ghost" (click)="addSection(page, 'Hero')">
+                                                <i class="pi pi-plus"></i> Sección
+                                            </button>
+                                        </div>
+                                        @if (!pageSections().length) {
+                                            <p class="ws-hint">Sin secciones. Añade una para empezar.</p>
+                                        }
+                                        @for (section of pageSections(); track section.id) {
+                                            <div class="ws-section">
+                                                <div class="ws-page__row ws-section__row">
+                                                    <span class="ws-page__handle"><i class="pi pi-bars"></i></span>
+                                                    <span class="ws-badge ws-badge--sec">{{ sectionTypeLabel(section.sectionType) }}</span>
+                                                    <span class="ws-page__title">{{ section.name }}</span>
+                                                    <span class="ws-page__spacer"></span>
+                                                    <button class="ws-btn ws-btn--sm" [disabled]="section.sortOrder === 1" (click)="moveSection(page, section, -1)" aria-label="Subir">
+                                                        <i class="pi pi-chevron-up"></i>
+                                                    </button>
+                                                    <button class="ws-btn ws-btn--sm" [disabled]="section.sortOrder === pageSections().length" (click)="moveSection(page, section, 1)" aria-label="Bajar">
+                                                        <i class="pi pi-chevron-down"></i>
+                                                    </button>
+                                                    <button class="ws-btn ws-btn--sm ws-btn--danger" (click)="removeSection(page, section)">
+                                                        <i class="pi pi-trash"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="ws-section__fields">
+                                                    <label class="ws-field ws-field--full">
+                                                        <span>Tipo de sección</span>
+                                                        <select [(ngModel)]="section.sectionType">
+                                                            @for (t of sectionTypeOptions(); track t) {
+                                                                <option [value]="t">{{ sectionTypeLabel(t) }}</option>
+                                                            }
+                                                        </select>
+                                                    </label>
+                                                    <label class="ws-field ws-field--full">
+                                                        <span>Nombre</span>
+                                                        <input [(ngModel)]="section.name" placeholder="Sección Hero" />
+                                                    </label>
+                                                    <label class="ws-field ws-field--full">
+                                                        <span>Contenido (JSON)</span>
+                                                        <textarea class="ws-field__json" [(ngModel)]="section.bodyJson" rows="4"
+                                                            spellcheck="false"></textarea>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="ws-modal__foot">
+                    <button class="ws-btn ws-btn--ghost" (click)="closeEditor()">Cancelar</button>
+                    <button class="ws-btn ws-btn--primary" [disabled]="busy()" (click)="saveEditor()">
+                        <i class="pi pi-check"></i> Guardar cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── Modal: nuevo sitio web ───────────────────────── -->
+    @if (showCreate()) {
+        <div class="ws-overlay" (click)="showCreate.set(false)">
+            <div class="ws-modal" (click)="$event.stopPropagation()">
+                <div class="ws-modal__head">
+                    <h3>Nuevo sitio web</h3>
+                    <button class="ws-modal__x" (click)="showCreate.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="ws-modal__body">
+                    <label class="ws-field">
+                        <span>Nombre del sitio</span>
+                        <input [(ngModel)]="form.name" (ngModelChange)="onNameChange()" placeholder="Ej. Página principal" />
+                    </label>
+                    <label class="ws-field">
+                        <span>Slug (URL)</span>
+                        <input [(ngModel)]="form.slug" placeholder="pagina-principal" />
+                    </label>
+                    <label class="ws-field">
+                        <span>Tema</span>
+                        <select [(ngModel)]="form.theme">
+                            <option value="Modern">Moderno</option>
+                            <option value="Classic">Clásico</option>
+                            <option value="Minimal">Minimal</option>
+                            <option value="Luxury">Lujo</option>
+                        </select>
+                    </label>
+                    <label class="ws-field ws-field--full">
+                        <span>Dominio propio (opcional)</span>
+                        <input [(ngModel)]="form.customDomain" placeholder="www.mihotel.com" />
+                    </label>
+                </div>
+                <div class="ws-modal__foot">
+                    <button class="ws-btn ws-btn--ghost" (click)="showCreate.set(false)">Cancelar</button>
+                    <button class="ws-btn ws-btn--primary" [disabled]="!form.name.trim()" (click)="submitCreate()">
+                        Crear sitio web
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>

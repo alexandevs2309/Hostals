@@ -4,6 +4,7 @@ import { provideRouter, withComponentInputBinding, withEnabledBlockingInitialNav
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { ConfirmationService } from 'primeng/api';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './app/core/interceptors/auth.interceptor';
 import { errorInterceptor } from './app/core/interceptors/error.interceptor';
@@ -11,6 +12,7 @@ import { responseTransformInterceptor } from './app/core/interceptors/response-t
 
 export const appConfig: ApplicationConfig = {
     providers: [
+        ConfirmationService,
         provideRouter(
             appRoutes,
             withComponentInputBinding(),

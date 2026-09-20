@@ -46,7 +46,7 @@
         <div class="rm-kpi">
             <span class="rm-kpi__label">Ocupación</span>
             <span class="rm-kpi__value">{{ stats().occupancyRate }}%</span>
-            <span class="rm-kpi__sub">ADR \${{ stats().avgPrice }}</span>
+            <span class="rm-kpi__sub">ADR {{ fmtMoney(stats().avgPrice) }}</span>
         </div>
     </div>
 
@@ -146,7 +146,7 @@
                     <div class="rm-c rm-c--type">{{ room.roomTypeName || '—' }}</div>
                     <div class="rm-c rm-c--num">Nivel {{ room.floor }}</div>
                     <div class="rm-c rm-c--num">{{ room.maxOccupancy }} hués.</div>
-                    <div class="rm-c rm-c--num rm-price">\${{ room.price | number }}</div>
+                    <div class="rm-c rm-c--num rm-price">{{ fmtMoney(room.price) }}</div>
                     <div class="rm-c rm-c--status">
                         <span class="rm-badge rm-badge--{{ (statusLabel(room.status) ? room.status : 'x').toLowerCase() }}">
                             {{ statusLabel(room.status) }}
@@ -196,7 +196,7 @@
             <div class="rm-modal" (click)="$event.stopPropagation()">
                 <div class="rm-modal__head">
                     <h3>Nueva habitación</h3>
-                    <button class="rm-modal__x" (click)="showCreate.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="rm-modal__x" (click)="showCreate.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="rm-modal__body">
                     <label class="rm-field">
@@ -244,7 +244,7 @@
             <div class="rm-modal" (click)="$event.stopPropagation()">
                 <div class="rm-modal__head">
                     <h3>Mantenimiento · habitación {{ maintenanceRoom()?.roomNumber }}</h3>
-                    <button class="rm-modal__x" (click)="showMaintenance.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="rm-modal__x" (click)="showMaintenance.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="rm-modal__body">
                     <label class="rm-field">

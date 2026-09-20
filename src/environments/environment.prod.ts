@@ -11,6 +11,8 @@ export const environment = {
   ratesApiUrl: 'https://api.hospitalityos.com/api/v1/rates',
   channelsApiUrl: 'https://api.hospitalityos.com/api/v1/channels',
   onboardingApiUrl: 'https://api.hospitalityos.com/api/v1/onboarding',
+  widgetApiUrl: 'https://api.hospitalityos.com/api/v1/public/widget',
+  paymentsApiUrl: 'https://api.hospitalityos.com/api/v1/public/payments',
   ratePlansApiUrl: 'https://api.hospitalityos.com/api/v1/rate-plans',
   dashboardApiUrl: 'https://api.hospitalityos.com/api/v1/dashboard',
   auditApiUrl: 'https://api.hospitalityos.com/api/v1/audit',

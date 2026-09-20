@@ -1,0 +1,115 @@
+<div class="rt-page">
+
+    <!-- ── Cabecera ─────────────────────────────────────── -->
+    <div class="rt-head">
+        <div>
+            <h1 class="rt-head__title">Tipos de habitación</h1>
+            <p class="rt-head__sub">{{ hotelName() }}</p>
+        </div>
+        <div class="rt-head__actions">
+            @if (msg()) {
+                <span class="rt-toast" [class.rt-toast--err]="msgError()">
+                    <i class="pi" [class.pi-check-circle]="!msgError()" [class.pi-exclamation-circle]="msgError()"></i>
+                    {{ msg() }}
+                </span>
+            }
+            @if (!loading() && !error()) {
+                <button class="rt-btn rt-btn--primary" (click)="openCreate()">
+                    <i class="pi pi-plus"></i> Nuevo tipo
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- ── Contenido ────────────────────────────────────── -->
+    @if (loading()) {
+        <div class="rt-panel rt-skel">
+            <div class="rt-card rt-card--skel"></div>
+            <div class="rt-card rt-card--skel"></div>
+            <div class="rt-card rt-card--skel"></div>
+        </div>
+    } @else if (error()) {
+        <div class="rt-panel rt-empty">
+            <div class="rt-empty__icon"><i class="pi pi-exclamation-triangle"></i></div>
+            <h3>{{ error() }}</h3>
+            <button class="rt-btn rt-btn--ghost" (click)="retry()"><i class="pi pi-refresh"></i> Reintentar</button>
+        </div>
+    } @else if (!roomTypes().length) {
+        <div class="rt-panel rt-empty">
+            <div class="rt-empty__icon"><i class="pi pi-building"></i></div>
+            <h3>No hay tipos de habitación todavía</h3>
+            <p>Crea el primer tipo (por ejemplo «Habitación estándar») antes de añadir habitaciones.</p>
+            <button class="rt-btn rt-btn--primary" (click)="openCreate()">
+                <i class="pi pi-plus"></i> Crear primer tipo
+            </button>
+        </div>
+    } @else {
+        <div class="rt-grid">
+            @for (t of roomTypes(); track t.id) {
+                <div class="rt-card">
+                    <div class="rt-card__top">
+                        <div class="rt-card__icon"><i class="pi pi-bed"></i></div>
+                        <h3>{{ t.name }}</h3>
+                    </div>
+                    @if (t.description) { <p class="rt-card__desc">{{ t.description }}</p> }
+                    <div class="rt-card__meta">
+                        <span class="rt-state">{{ roomsLabel(t) }}</span>
+                        <span class="rt-price">{{ fmtMoney(t.basePrice) }}</span>
+                    </div>
+                    <div class="rt-card__foot">
+                        <button class="rt-btn rt-btn--ghost" [disabled]="busy()" (click)="openEdit(t)">
+                            <i class="pi pi-pencil"></i> Editar
+                        </button>
+                        <button class="rt-btn rt-btn--ghost rt-btn--danger" [disabled]="busy()" (click)="remove(t)">
+                            <i class="pi pi-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- ── Modal: nuevo / editar tipo ───────────────────── -->
+    @if (showModal()) {
+        <div class="rt-overlay" (click)="showModal.set(false)">
+            <div class="rt-modal" (click)="$event.stopPropagation()">
+                <div class="rt-modal__head">
+                    <h3>{{ editing() ? 'Editar tipo de habitación' : 'Nuevo tipo de habitación' }}</h3>
+                    <button class="rt-modal__x" (click)="showModal.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="rt-modal__body">
+                    <label class="rt-field rt-field--full">
+                        <span>Nombre</span>
+                        <input [(ngModel)]="form.name" placeholder="Ej. Habitación estándar" />
+                    </label>
+                    <label class="rt-field rt-field--full">
+                        <span>Descripción (opcional)</span>
+                        <textarea [(ngModel)]="form.description" rows="2" placeholder="Vista a la ciudad, desayuno incluido…"></textarea>
+                    </label>
+                    <label class="rt-field">
+                        <span>Capacidad máxima (huéspedes)</span>
+                        <input type="number" [(ngModel)]="form.capacity" min="1" />
+                    </label>
+                    <label class="rt-field">
+                        <span>Precio base por noche</span>
+                        <input type="number" [(ngModel)]="form.basePrice" min="0" step="0.01" />
+                    </label>
+                    <label class="rt-field">
+                        <span>Camas extra (capacidad)</span>
+                        <input type="number" [(ngModel)]="form.extraBedCapacity" min="0" />
+                    </label>
+                    <label class="rt-field">
+                        <span>Precio cama extra</span>
+                        <input type="number" [(ngModel)]="form.extraBedPrice" min="0" step="0.01" />
+                    </label>
+                </div>
+                <div class="rt-modal__foot">
+                    <button class="rt-btn rt-btn--ghost" (click)="showModal.set(false)" [disabled]="busy()">Cancelar</button>
+                    <button class="rt-btn rt-btn--primary" [disabled]="!form.name.trim() || busy()" (click)="submit()">
+                        {{ editing() ? 'Guardar cambios' : 'Crear tipo' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HotelService, RoomTypeDto } from '@/app/core/services/hotel.service';
+import { HotelService, NoHotelConfiguredError, RoomTypeDto } from '@/app/core/services/hotel.service';
 import {
   ChannelService,
   Channel,
@@ -16,6 +16,7 @@ import {
   GatewayInfo,
   WidgetConfig
 } from '@/app/core/services/widget.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-channels',
@@ -61,8 +62,7 @@ export class ChannelsPage implements OnInit {
   snippet = signal('');
 
   constructor() {
-    const base = `${window.location.protocol}//${window.location.hostname}:5000`;
-    this.widgetScriptUrl.set(`${base}/api/v1/public/widget/script?hotelId=PLACEHOLDER`);
+    this.widgetScriptUrl.set(`${environment.widgetApiUrl}/script?hotelId=PLACEHOLDER`);
   }
 
   private isoAdd(days: number): string {
@@ -77,28 +77,15 @@ export class ChannelsPage implements OnInit {
   }
 
   private resolveHotel(): void {
-    const stored = localStorage.getItem('auth_hotel_id');
-    const onHotel = (hotel: { id: string; name: string }): void => {
-      this.hotelId.set(hotel.id);
-      this.hotelName.set(hotel.name);
-      this.load();
-    };
-
-    if (stored) {
-      this.hotelsApi.getHotelById(stored).subscribe({
-        next: onHotel,
-        error: () => this.fail('No se pudo cargar la propiedad.')
-      });
-      return;
-    }
-
-    this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-      next: (page) => {
-        const hotel = page.items[0];
-        if (hotel) onHotel(hotel);
-        else this.fail('No hay ninguna propiedad configurada todavía.');
+    this.hotelsApi.resolveActiveHotel().subscribe({
+      next: (hotel) => {
+        this.hotelId.set(hotel.id);
+        this.hotelName.set(hotel.name);
+        this.load();
       },
-      error: () => this.fail('No se pudo cargar la propiedad.')
+      error: (err) => this.fail(err instanceof NoHotelConfiguredError
+        ? 'No hay ninguna propiedad configurada todavía.'
+        : 'No se pudo cargar la propiedad.')
     });
   }
 
@@ -306,7 +293,7 @@ export class ChannelsPage implements OnInit {
   reloadWidget(): void {
     const id = this.hotelId();
     if (!id) return;
-    this.widgetScriptUrl.set(`${window.location.protocol}//${window.location.hostname}:5000/api/v1/public/widget/script?hotelId=${id}`);
+    this.widgetScriptUrl.set(`${environment.widgetApiUrl}/script?hotelId=${id}`);
     this.snippet.set(`<div data-auron-widget></div>\n<script src="${this.widgetScriptUrl()}" async></script>`);
     this.widgetApi.getConfig(id).subscribe({
       next: (c) => this.widgetConfig.set(c),

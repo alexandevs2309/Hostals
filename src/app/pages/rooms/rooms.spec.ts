@@ -41,9 +41,10 @@ describe('RoomsPage', () => {
         );
         roomApi.getHotelRooms.and.returnValue(of(rooms));
 
-        const hotelApi = jasmine.createSpyObj<HotelService>('HotelService', ['getHotels', 'getHotelById', 'getHotelRoomTypes']);
+        const hotelApi = jasmine.createSpyObj<HotelService>('HotelService', ['getHotels', 'getHotelById', 'getHotelRoomTypes', 'resolveActiveHotel']);
         hotelApi.getHotelById.and.returnValue(of({ id: hotelId, name: 'Repro' } as unknown as Hotel));
         hotelApi.getHotelRoomTypes.and.returnValue(of(roomTypes));
+        hotelApi.resolveActiveHotel.and.returnValue(of({ id: hotelId, name: 'Repro' } as unknown as Hotel));
 
         const dashApi = jasmine.createSpyObj<DashboardService>('DashboardService', ['getMaintenanceTickets']);
         dashApi.getMaintenanceTickets.and.returnValue(of([] as MaintenanceTicketDto[]));

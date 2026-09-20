@@ -69,7 +69,7 @@
                         <div class="an-nodata">Sin ingresos registrados todavía</div>
                     } @else {
                         @for (p of revenue(); track $index) {
-                            <div class="an-col" [title]="p.label + ': $' + p.value">
+                            <div class="an-col" [title]="p.label + ': ' + fmtMoney(p.value)">
                                 <div class="an-col__bar">
                                     <div class="an-col__fill an-col__fill--rev" [style.height]="barHeight(p.value, maxRev())"></div>
                                 </div>

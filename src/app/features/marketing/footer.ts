@@ -47,7 +47,6 @@ import { HosBrand } from '@/app/shared/components/hos-brand';
                         <div class="gos-footer__links">
                             <a class="gos-footer__link" routerLink="/blog">Blog</a>
                             <a class="gos-footer__link" routerLink="/faq">FAQ</a>
-                            <a class="gos-footer__link" routerLink="/app/documentation">Documentación</a>
                             <a class="gos-footer__link" routerLink="/contact">Contacto</a>
                         </div>
                     </div>

@@ -1,31 +1,41 @@
 /* ════════════════════════════════════════════════════════════════════════════
    Hospitality OS — Sistema de diseño global
-   Tokens + clases base de los componentes custom (gos-*, reg-*, acct-*).
+   Tokens + clases base (gos-*, reg-*, acct-*) + primitivas de operación (hos-*).
    Reconstruido para el template Hostals / Sakai con tema primario teal.
+   La sección 7 «OPERATIONS (hos-*)» es el lenguaje unificado del PMS (FASE 2).
    ════════════════════════════════════════════════════════════════════════════ */
 
 /* ────────────────────────────────────────────────────────────────────────────
    1) TOKENS
    ──────────────────────────────────────────────────────────────────────────── */
 :root {
-    /* Marca */
-    --hos-primary: #14b8a6;
-    --hos-primary-strong: #0f766e;
-    --hos-brand: #0f766e;
-    --hos-accent-rgb: 20, 184, 166;
-    --hos-primary-soft: rgba(20, 184, 166, 0.1);
-    --hos-grad: linear-gradient(135deg, #14b8a6 0%, #0ea5e9 55%, #6366f1 100%);
+    /* ── Marca — derivada de PrimeNG (sigue preset/paleta) ── */
+    --hos-primary: var(--p-primary-color, #14b8a6);
+    --hos-primary-strong: var(--p-primary-700, #0f766e);
+    --hos-brand: var(--p-primary-700, #0f766e);
+    --hos-primary-soft: color-mix(in srgb, var(--p-primary-color, #14b8a6) 12%, transparent);
+    --hos-grad: linear-gradient(135deg, var(--p-primary-400, #2dd4bf) 0%, var(--p-primary-500, #14b8a6) 55%, var(--p-primary-700, #0f766e) 100%);
 
-    /* Superficies */
-    --hos-bg: #f5f7fb;
-    --hos-bg-soft: #edf0f7;
-    --hos-surface: #ffffff;
-    --hos-surface-soft: #f8fafc;
-    --hos-border: #e4e7ee;
+    /* ── Superficies — siguen el modo claro/oscuro de PrimeNG ── */
+    --hos-bg: var(--p-surface-50, #f8fafc);
+    --hos-bg-soft: var(--p-surface-100, #f1f5f9);
+    --hos-surface: var(--p-content-background, #ffffff);
+    --hos-surface-soft: var(--p-surface-50, #f8fafc);
+    --hos-border: var(--p-content-border-color, #e4e7ee);
 
-    /* Texto */
-    --hos-text: #1e293b;
-    --hos-text-muted: #64748b;
+    /* ── Texto ── */
+    --hos-text: var(--p-text-color, #1e293b);
+    --hos-text-muted: var(--p-text-muted-color, #64748b);
+
+    /* ── Estados ── */
+    --hos-success: #16a34a;
+    --hos-success-soft: color-mix(in srgb, var(--hos-success) 12%, transparent);
+    --hos-danger: #dc2626;
+    --hos-danger-soft: color-mix(in srgb, var(--hos-danger) 12%, transparent);
+    --hos-warning: #f59e0b;
+    --hos-warning-soft: color-mix(in srgb, var(--hos-warning) 12%, transparent);
+    --hos-info: var(--p-primary-color, #14b8a6);
+    --hos-info-soft: color-mix(in srgb, var(--hos-info) 12%, transparent);
 
     /* Gamas */
     --hos-teal-50: #f0fdfa;
@@ -50,32 +60,103 @@
     --hos-slate-900: #0f172a;
     --hos-slate-950: #020617;
 
-    /* Tipografía */
+    /* Tipografía — escala de roles (rem; base html 14px) */
     --hos-font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --hos-font-display: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --hos-text-numeric: var(--hos-font-display), 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --hos-fs-2xl: 1.75rem;
+    --hos-fs-xl: 1.375rem;
+    --hos-fs-lg: 1.125rem;
+    --hos-fs-md: 1rem;
+    --hos-fs-base: 0.875rem;
+    --hos-fs-sm: 0.8125rem;
+    --hos-fs-xs: 0.75rem;
+    --hos-fw-extrabold: 800;
+    --hos-fw-bold: 700;
+    --hos-fw-semibold: 600;
+    --hos-fw-medium: 500;
+    --hos-lh-tight: 1.25;
+    --hos-lh-base: 1.5;
 
-    /* Radio / sombras */
-    --hos-radius: 1rem;
+    /* Espaciado — regla 4–12 / 12–16 / 16–24 / 24–32 / 32–48 (14px base) */
+    --hos-space-1: 0.25rem;
+    --hos-space-2: 0.5rem;
+    --hos-space-3: 0.75rem;
+    --hos-space-4: 1rem;
+    --hos-space-5: 1.25rem;
+    --hos-space-6: 1.5rem;
+    --hos-space-7: 2rem;
+    --hos-space-8: 2.5rem;
+    --hos-space-9: 3rem;
+
+    /* Radio — escala coherente (--hos-radius-lg pasa a 1rem; el marketing usa --hos-radius-xl) */
+    --hos-radius-sm: 0.5rem;
     --hos-radius-md: 0.75rem;
-    --hos-radius-lg: 1.25rem;
-    --hos-radius-xl: 1.75rem;
-    --hos-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
-    --hos-shadow: 0 12px 32px -14px rgba(15, 23, 42, 0.18);
-    --hos-shadow-lg: 0 28px 70px -28px rgba(15, 23, 42, 0.4);
+    --hos-radius: var(--hos-radius-lg);
+    --hos-radius-lg: 1rem;
+    --hos-radius-xl: 1.25rem;
+
+    /* Elevación — paneles operativos SIN sombra; sombras solo para elevar (modales, menús) */
+    --hos-shadow-none: none;
+    --hos-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --hos-shadow: 0 4px 16px -6px rgba(15, 23, 42, 0.12);
+    --hos-shadow-lg: 0 24px 48px -20px rgba(15, 23, 42, 0.28);
+
+    /* Focus — a11y */
+    --hos-focus-ring: 2px solid var(--p-focus-ring-color, #14b8a6);
+    --hos-focus-offset: 2px;
+
+    /* Densidad — 0.85 compact / 1 default / 1.15 comfortable */
+    --hos-density: 1;
+
+    /* Estados — dominio PMS (color + soft; los soft respetan modo oscuro vía color-mix) */
+    --hos-occupied: #2563eb;
+    --hos-occupied-soft: color-mix(in srgb, var(--hos-occupied) 10%, transparent);
+    --hos-available: var(--hos-success);
+    --hos-available-soft: color-mix(in srgb, var(--hos-available) 10%, transparent);
+    --hos-clean: var(--hos-success);
+    --hos-clean-soft: color-mix(in srgb, var(--hos-clean) 10%, transparent);
+    --hos-dirty: var(--hos-warning);
+    --hos-dirty-soft: color-mix(in srgb, var(--hos-dirty) 10%, transparent);
+    --hos-inspection: #6366f1;
+    --hos-inspection-soft: color-mix(in srgb, var(--hos-inspection) 10%, transparent);
+    --hos-out-of-service: var(--hos-danger);
+    --hos-out-of-service-soft: color-mix(in srgb, var(--hos-out-of-service) 10%, transparent);
+    --hos-maintenance: var(--hos-neutral);
+    --hos-maintenance-soft: color-mix(in srgb, var(--hos-maintenance) 10%, transparent);
+    --hos-neutral: #64748b;
+    --hos-neutral-soft: color-mix(in srgb, var(--hos-neutral) 10%, transparent);
+    --hos-pending: var(--hos-warning);
+    --hos-pending-soft: color-mix(in srgb, var(--hos-pending) 10%, transparent);
+    --hos-active: var(--p-primary-color, #14b8a6);
+    --hos-active-soft: color-mix(in srgb, var(--hos-active) 10%, transparent);
+    --hos-inactive: #94a3b8;
+    --hos-inactive-soft: color-mix(in srgb, var(--hos-inactive) 10%, transparent);
 }
 
 .app-dark {
-    --hos-bg: #0b1220;
-    --hos-bg-soft: #0d1526;
-    --hos-surface: #111a2c;
-    --hos-surface-soft: #0e1726;
-    --hos-border: #22304a;
-    --hos-text: #e2e8f0;
-    --hos-text-muted: #94a3b8;
-    --hos-primary-soft: rgba(45, 212, 191, 0.14);
-    --hos-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
-    --hos-shadow: 0 12px 32px -14px rgba(0, 0, 0, 0.55);
-    --hos-shadow-lg: 0 28px 70px -28px rgba(0, 0, 0, 0.7);
+    /* Solo lo que los primitivos no invierten solos; el resto lo hereda de PrimeNG */
+    --hos-bg: var(--p-surface-950, #020617);
+    --hos-bg-soft: var(--p-surface-900, #0f172a);
+    --hos-surface-soft: var(--p-surface-900, #0f172a);
+    --hos-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --hos-shadow: 0 4px 16px -6px rgba(0, 0, 0, 0.5);
+    --hos-shadow-lg: 0 24px 48px -20px rgba(0, 0, 0, 0.65);
+}
+
+/* Modos de densidad — aplicar en el contenedor raíz de una página/sección */
+.hos-density--compact {
+    --hos-density: 0.85;
+}
+
+.hos-density--comfortable {
+    --hos-density: 1.15;
+}
+
+/* Números operativos (KPIs): display font + tabulares */
+.hos-num {
+    font-family: var(--hos-text-numeric);
+    font-variant-numeric: tabular-nums;
 }
 
 html {
@@ -2333,6 +2414,655 @@ html {
         transform: none !important;
         filter: none !important;
         transition: none !important;
+    }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   7) OPERATIONS (hos-*) — lenguaje unificado del PMS (FASE 2)
+   Primitivas centrales que migrarán las 20+ páginas (FASE 4). No tocan páginas.
+   Un solo namespace hos-*, consumen los tokens de arriba y heredan light/dark
+   de PrimeNG. Paneles operativos sin sombra (borde + fondo); sombra solo elevada.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* ── Página ── */
+.hos-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--hos-space-5);
+    padding-block-end: var(--hos-space-7);
+}
+
+.hos-page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--hos-space-5);
+    flex-wrap: wrap;
+}
+
+.hos-page-head__title {
+    margin: 0;
+    font-family: var(--hos-font-display);
+    font-size: var(--hos-fs-xl);
+    font-weight: var(--hos-fw-extrabold);
+    line-height: var(--hos-lh-tight);
+    letter-spacing: -0.02em;
+    color: var(--hos-text);
+}
+
+.hos-page-head__sub {
+    margin: var(--hos-space-1) 0 0;
+    font-size: var(--hos-fs-sm);
+    color: var(--hos-text-muted);
+    max-width: 70ch;
+}
+
+.hos-page-head__actions {
+    display: flex;
+    gap: var(--hos-space-3);
+    flex-wrap: wrap;
+}
+
+/* ── Sección ── */
+.hos-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--hos-space-3);
+}
+
+.hos-section__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--hos-space-4);
+    flex-wrap: wrap;
+}
+
+.hos-section__title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--hos-space-2);
+    margin: 0;
+    font-size: var(--hos-fs-md);
+    font-weight: var(--hos-fw-semibold);
+    color: var(--hos-text);
+}
+
+.hos-section__title i {
+    color: var(--hos-primary);
+}
+
+.hos-section__meta {
+    font-size: var(--hos-fs-sm);
+    color: var(--hos-text-muted);
+}
+
+/* ── Métricas (jerarquía L1/L2) ── */
+.hos-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--hos-space-4);
+}
+
+.hos-metric {
+    display: flex;
+    flex-direction: column;
+    gap: var(--hos-space-2);
+    padding: calc(var(--hos-space-4) * var(--hos-density));
+    background: var(--hos-surface);
+    border: 1px solid var(--hos-border);
+    border-radius: var(--hos-radius-md);
+    box-shadow: var(--hos-shadow-none);
+}
+
+/* L1 — métrica primaria de alto contraste (Ocupación, Ingresos) */
+.hos-metric--primary {
+    background: var(--p-primary-color, #14b8a6);
+    border-color: transparent;
+    color: var(--p-primary-contrast-color, #ffffff);
+}
+
+/* L2 — bloques compactos de contexto (ADR, RevPAR, check-ins…): solo borde superior */
+.hos-metric--secondary {
+    padding: calc(var(--hos-space-3) * var(--hos-density)) var(--hos-space-3);
+    background: transparent;
+    border: 0;
+    border-top: 3px solid var(--hos-border);
+    border-radius: 0;
+}
+
+.hos-metric--secondary:first-child {
+    border-top-color: var(--hos-primary);
+}
+
+.hos-metric__label {
+    font-size: var(--hos-fs-xs);
+    font-weight: var(--hos-fw-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hos-text-muted);
+}
+
+.hos-metric__value {
+    font-family: var(--hos-text-numeric);
+    font-size: var(--hos-fs-xl);
+    font-weight: var(--hos-fw-extrabold);
+    line-height: var(--hos-lh-tight);
+    font-variant-numeric: tabular-nums;
+    color: var(--hos-text);
+}
+
+.hos-metric__sub {
+    font-size: var(--hos-fs-sm);
+    color: var(--hos-text-muted);
+}
+
+.hos-metric--primary .hos-metric__label,
+.hos-metric--primary .hos-metric__sub {
+    color: color-mix(in srgb, var(--p-primary-contrast-color, #ffffff) 78%, transparent);
+}
+
+.hos-metric--primary .hos-metric__value {
+    color: var(--p-primary-contrast-color, #ffffff);
+}
+
+/* ── Panel ── */
+.hos-panel {
+    background: var(--hos-surface);
+    border: 1px solid var(--hos-border);
+    border-radius: var(--hos-radius-lg);
+    box-shadow: var(--hos-shadow-none);
+    padding: var(--hos-space-5);
+}
+
+/* ── Botones ── */
+.hos-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--hos-space-2);
+    padding: calc(0.5rem * var(--hos-density)) calc(0.875rem * var(--hos-density));
+    border: 1px solid transparent;
+    border-radius: var(--hos-radius-sm);
+    background: var(--hos-bg-soft);
+    color: var(--hos-text);
+    font-family: var(--hos-font-sans);
+    font-size: var(--hos-fs-sm);
+    font-weight: var(--hos-fw-semibold);
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: var(--hos-shadow-none);
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.hos-btn:hover {
+    background: color-mix(in srgb, var(--hos-text) 8%, transparent);
+}
+
+.hos-btn--primary {
+    background: var(--p-primary-color, #14b8a6);
+    color: var(--p-primary-contrast-color, #ffffff);
+    border-color: transparent;
+}
+
+.hos-btn--primary:hover {
+    background: color-mix(in srgb, var(--p-primary-color, #14b8a6) 85%, #000000);
+}
+
+.hos-btn--ghost {
+    background: transparent;
+    border-color: var(--hos-border);
+}
+
+.hos-btn--ghost:hover {
+    background: var(--hos-bg-soft);
+}
+
+.hos-btn--danger {
+    background: var(--hos-danger-soft);
+    color: var(--hos-danger);
+}
+
+.hos-btn--danger:hover {
+    background: color-mix(in srgb, var(--hos-danger) 18%, transparent);
+}
+
+.hos-btn--sm {
+    padding: calc(0.3rem * var(--hos-density)) calc(0.625rem * var(--hos-density));
+    font-size: var(--hos-fs-xs);
+}
+
+.hos-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Campos ── */
+.hos-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--hos-space-1);
+    min-width: 0;
+}
+
+.hos-field__label {
+    font-size: var(--hos-fs-sm);
+    font-weight: var(--hos-fw-medium);
+    color: var(--hos-text-muted);
+}
+
+.hos-input,
+.hos-select,
+.hos-textarea {
+    width: 100%;
+    padding: calc(0.5rem * var(--hos-density)) calc(0.75rem * var(--hos-density));
+    background: var(--hos-surface);
+    border: 1px solid var(--hos-border);
+    border-radius: var(--hos-radius-sm);
+    color: var(--hos-text);
+    font-family: var(--hos-font-sans);
+    font-size: var(--hos-fs-base);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hos-input:focus,
+.hos-select:focus,
+.hos-textarea:focus {
+    outline: none;
+    border-color: var(--p-primary-color, #14b8a6);
+}
+
+.hos-input::placeholder,
+.hos-textarea::placeholder {
+    color: var(--hos-text-muted);
+}
+
+/* ── Barra de filtros / chips / pestañas ── */
+.hos-filterbar {
+    display: flex;
+    align-items: center;
+    gap: var(--hos-space-2);
+    flex-wrap: wrap;
+}
+
+.hos-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--hos-space-1);
+    padding: calc(0.3rem * var(--hos-density)) calc(0.75rem * var(--hos-density));
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: var(--hos-bg-soft);
+    color: var(--hos-text-muted);
+    font-size: var(--hos-fs-xs);
+    font-weight: var(--hos-fw-semibold);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.hos-chip:hover {
+    color: var(--hos-text);
+}
+
+.hos-chip--on {
+    background: var(--hos-primary-soft);
+    border-color: color-mix(in srgb, var(--p-primary-color, #14b8a6) 28%, transparent);
+    color: var(--hos-primary-strong);
+}
+
+.hos-tabs {
+    display: inline-flex;
+    gap: var(--hos-space-1);
+    padding: 3px;
+    background: var(--hos-bg-soft);
+    border-radius: 999px;
+}
+
+.hos-tab {
+    padding: calc(0.32rem * var(--hos-density)) calc(0.9rem * var(--hos-density));
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--hos-text-muted);
+    font-size: var(--hos-fs-sm);
+    font-weight: var(--hos-fw-semibold);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.hos-tab--on {
+    background: var(--hos-surface);
+    color: var(--hos-text);
+    box-shadow: var(--hos-shadow-sm);
+}
+
+/* ── Tabla (div-grid con sticky header) ── */
+.hos-table {
+    overflow: auto;
+    background: var(--hos-surface);
+    border: 1px solid var(--hos-border);
+    border-radius: var(--hos-radius-lg);
+    box-shadow: var(--hos-shadow-none);
+}
+
+.hos-table__head {
+    display: grid;
+    align-items: center;
+    gap: var(--hos-space-3);
+    padding: calc(var(--hos-space-2) * var(--hos-density)) var(--hos-space-4);
+    background: var(--hos-bg-soft);
+    border-bottom: 1px solid var(--hos-border);
+    font-size: var(--hos-fs-xs);
+    font-weight: var(--hos-fw-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--hos-text-muted);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.hos-table__row {
+    display: grid;
+    align-items: center;
+    gap: var(--hos-space-3);
+    padding: calc(var(--hos-space-3) * var(--hos-density)) var(--hos-space-4);
+    border-bottom: 1px solid var(--hos-border);
+    transition: background-color 0.12s ease;
+}
+
+.hos-table__row:hover {
+    background: color-mix(in srgb, var(--hos-text) 3%, transparent);
+}
+
+.hos-table__row:last-child {
+    border-bottom: 0;
+}
+
+/* ── Badges de estado (color + contorno; nunca solo color) ── */
+.hos-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--hos-space-1);
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--hos-neutral) 25%, transparent);
+    background: var(--hos-neutral-soft);
+    color: var(--hos-neutral);
+    font-size: 0.72rem;
+    font-weight: var(--hos-fw-bold);
+    line-height: 1.35;
+    white-space: nowrap;
+}
+
+.hos-badge--success { background: var(--hos-success-soft); color: var(--hos-success); border-color: color-mix(in srgb, var(--hos-success) 25%, transparent); }
+.hos-badge--danger { background: var(--hos-danger-soft); color: var(--hos-danger); border-color: color-mix(in srgb, var(--hos-danger) 25%, transparent); }
+.hos-badge--warning, .hos-badge--pending { background: var(--hos-pending-soft); color: var(--hos-pending); border-color: color-mix(in srgb, var(--hos-pending) 25%, transparent); }
+.hos-badge--info, .hos-badge--active { background: var(--hos-active-soft); color: var(--hos-active); border-color: color-mix(in srgb, var(--hos-active) 25%, transparent); }
+.hos-badge--inactive { background: var(--hos-inactive-soft); color: var(--hos-inactive); border-color: color-mix(in srgb, var(--hos-inactive) 25%, transparent); }
+.hos-badge--occupied { background: var(--hos-occupied-soft); color: var(--hos-occupied); border-color: color-mix(in srgb, var(--hos-occupied) 25%, transparent); }
+.hos-badge--available, .hos-badge--clean { background: var(--hos-clean-soft); color: var(--hos-clean); border-color: color-mix(in srgb, var(--hos-clean) 25%, transparent); }
+.hos-badge--dirty { background: var(--hos-dirty-soft); color: var(--hos-dirty); border-color: color-mix(in srgb, var(--hos-dirty) 25%, transparent); }
+.hos-badge--inspection { background: var(--hos-inspection-soft); color: var(--hos-inspection); border-color: color-mix(in srgb, var(--hos-inspection) 25%, transparent); }
+.hos-badge--out-of-service { background: var(--hos-out-of-service-soft); color: var(--hos-out-of-service); border-color: color-mix(in srgb, var(--hos-out-of-service) 25%, transparent); }
+.hos-badge--maintenance { background: var(--hos-maintenance-soft); color: var(--hos-maintenance); border-color: color-mix(in srgb, var(--hos-maintenance) 25%, transparent); }
+
+/* ── Punto de estado (operativo) ── */
+.hos-status-dot {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.hos-status-dot--success { color: var(--hos-success); }
+.hos-status-dot--danger { color: var(--hos-danger); }
+.hos-status-dot--warning, .hos-status-dot--pending { color: var(--hos-pending); }
+.hos-status-dot--info, .hos-status-dot--active { color: var(--hos-active); }
+.hos-status-dot--inactive { color: var(--hos-inactive); }
+.hos-status-dot--occupied { color: var(--hos-occupied); }
+.hos-status-dot--available, .hos-status-dot--clean { color: var(--hos-clean); }
+.hos-status-dot--dirty { color: var(--hos-dirty); }
+.hos-status-dot--inspection { color: var(--hos-inspection); }
+.hos-status-dot--out-of-service { color: var(--hos-out-of-service); }
+.hos-status-dot--maintenance { color: var(--hos-maintenance); }
+.hos-status-dot--pulse {
+    animation: hos-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hos-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 35%, transparent); }
+    50% { box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 0%, transparent); }
+}
+
+/* ── Modal (una sola shell; ancho por contexto con --wide) ── */
+.hos-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--hos-space-5);
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(2px);
+    overflow: auto;
+}
+
+.hos-modal {
+    display: flex;
+    flex-direction: column;
+    width: min(640px, 100%);
+    max-height: 90vh;
+    background: var(--hos-surface);
+    border-radius: var(--hos-radius-lg);
+    box-shadow: var(--hos-shadow-lg);
+    overflow: hidden;
+}
+
+.hos-modal--wide {
+    width: min(900px, 100%);
+}
+
+.hos-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--hos-space-4);
+    padding: var(--hos-space-4) var(--hos-space-5);
+    border-bottom: 1px solid var(--hos-border);
+}
+
+.hos-modal__title {
+    margin: 0;
+    font-size: var(--hos-fs-md);
+    font-weight: var(--hos-fw-semibold);
+    color: var(--hos-text);
+}
+
+.hos-modal__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: var(--hos-radius-sm);
+    background: transparent;
+    color: var(--hos-text-muted);
+    font-size: var(--hos-fs-base);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.hos-modal__close:hover {
+    background: var(--hos-bg-soft);
+    color: var(--hos-text);
+}
+
+.hos-modal__body {
+    padding: var(--hos-space-5);
+    overflow: auto;
+    font-size: var(--hos-fs-base);
+}
+
+.hos-modal__foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--hos-space-3);
+    padding: var(--hos-space-4) var(--hos-space-5);
+    border-top: 1px solid var(--hos-border);
+}
+
+@media (max-width: 580px) {
+    .hos-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .hos-modal {
+        width: 100%;
+        max-height: 92vh;
+        border-radius: var(--hos-radius-xl) var(--hos-radius-xl) 0 0;
+    }
+}
+
+/* ── Toast ── */
+.hos-toast {
+    position: fixed;
+    top: var(--hos-space-5);
+    right: var(--hos-space-5);
+    z-index: 3000;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--hos-space-3);
+    max-width: min(380px, calc(100vw - var(--hos-space-7)));
+    padding: var(--hos-space-4);
+    background: var(--hos-surface);
+    border: 1px solid var(--hos-border);
+    border-inline-start-width: 4px;
+    border-radius: var(--hos-radius-lg);
+    box-shadow: var(--hos-shadow-lg);
+    font-size: var(--hos-fs-sm);
+    color: var(--hos-text);
+    animation: gos-fade-up 0.2s ease;
+}
+
+.hos-toast--ok { border-inline-start-color: var(--hos-success); }
+.hos-toast--err { border-inline-start-color: var(--hos-danger); }
+.hos-toast--warn { border-inline-start-color: var(--hos-warning); }
+.hos-toast__icon { flex: 0 0 auto; }
+.hos-toast--ok .hos-toast__icon { color: var(--hos-success); }
+.hos-toast--err .hos-toast__icon { color: var(--hos-danger); }
+.hos-toast--warn .hos-toast__icon { color: var(--hos-warning); }
+
+/* ── Empty / Loading / Error ── */
+.hos-empty,
+.hos-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--hos-space-2);
+    padding: var(--hos-space-8) var(--hos-space-5);
+    text-align: center;
+    color: var(--hos-text-muted);
+}
+
+.hos-empty__icon,
+.hos-error__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: var(--hos-bg-soft);
+    color: var(--hos-primary);
+    font-size: var(--hos-fs-lg);
+}
+
+.hos-error__icon {
+    background: var(--hos-danger-soft);
+    color: var(--hos-danger);
+}
+
+.hos-empty__title,
+.hos-error__title {
+    font-size: var(--hos-fs-md);
+    font-weight: var(--hos-fw-semibold);
+    color: var(--hos-text);
+}
+
+.hos-empty__sub,
+.hos-error__sub {
+    font-size: var(--hos-fs-sm);
+    max-width: 48ch;
+}
+
+.hos-empty__action,
+.hos-error__action {
+    margin-top: var(--hos-space-2);
+}
+
+.hos-skel {
+    display: block;
+    height: calc(var(--hos-space-4) * var(--hos-density));
+    border-radius: var(--hos-radius-sm);
+    background: var(--hos-bg-soft);
+    background-image: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--hos-surface) 75%, transparent) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: hos-shimmer 1.4s infinite;
+}
+
+@keyframes hos-shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+}
+
+/* ── Chart (contenedor) ── */
+.hos-chart {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--hos-space-4);
+    min-height: 260px;
+    padding: var(--hos-space-4);
+    background: var(--hos-surface);
+    border: 1px solid var(--hos-border);
+    border-radius: var(--hos-radius-lg);
+    box-shadow: var(--hos-shadow-none);
+}
+
+/* ── Focus visible unificado para primitivas ── */
+.hos-btn:focus-visible,
+.hos-chip:focus-visible,
+.hos-tab:focus-visible,
+.hos-input:focus-visible,
+.hos-select:focus-visible,
+.hos-textarea:focus-visible,
+.hos-modal__close:focus-visible {
+    outline: var(--hos-focus-ring);
+    outline-offset: var(--hos-focus-offset);
+}
+
+/* ── Responsive base ── */
+@media (max-width: 900px) {
+    .hos-metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 580px) {
+    .hos-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .hos-page-head {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 

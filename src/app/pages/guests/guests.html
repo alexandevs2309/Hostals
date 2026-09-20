@@ -66,7 +66,7 @@
             </div>
             <div class="gs-search">
                 <i class="pi pi-search"></i>
-                <input [(ngModel)]="search" placeholder="Buscar nombre, email, teléfono, documento…" />
+                <input [(ngModel)]="search" (ngModelChange)="onSearchChange()" placeholder="Buscar nombre, email, teléfono, documento…" />
             </div>
         </div>
 
@@ -144,7 +144,7 @@
             <div class="gs-modal gs-modal--wide" (click)="$event.stopPropagation()">
                 <div class="gs-modal__head">
                     <h3>{{ modalMode() === 'edit' ? 'Editar huésped' : 'Nuevo huésped' }}</h3>
-                    <button class="gs-modal__x" (click)="showModal.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="gs-modal__x" (click)="showModal.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="gs-modal__body">
                     <div class="gs-form-grid">
@@ -230,7 +230,7 @@
             <div class="gs-modal gs-modal--wide" (click)="$event.stopPropagation()">
                 <div class="gs-modal__head">
                     <h3>Ficha · {{ detail()?.fullName }}</h3>
-                    <button class="gs-modal__x" (click)="showDetail.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="gs-modal__x" (click)="showDetail.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="gs-modal__body">
                     <div class="gs-detail-head">

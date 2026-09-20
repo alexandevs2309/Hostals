@@ -62,6 +62,8 @@ export class WidgetService {
 export interface GatewayInfo {
   name: string;
   displayName: string;
+  isLive?: boolean;
+  mode?: string;
 }
 
 export interface GatewayChargeResult {

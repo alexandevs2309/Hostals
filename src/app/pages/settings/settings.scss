@@ -15,12 +15,12 @@
     font-size: 1.5rem;
     font-weight: 700;
     margin: 0 0 0.25rem;
-    color: var(--text-color);
+    color: var(--hos-text);
 }
 
 .rm-head__sub {
     margin: 0;
-    color: var(--text-color-secondary);
+    color: var(--hos-text-muted);
     font-size: 0.9rem;
 }
 
@@ -36,15 +36,15 @@
     align-items: center;
     gap: 0.4rem;
     font-size: 0.85rem;
-    color: #16a34a;
-    background: rgba(22, 163, 74, 0.1);
+    color: var(--hos-success);
+    background: var(--hos-success-soft);
     padding: 0.4rem 0.7rem;
     border-radius: 999px;
 }
 
 .rm-toast--err {
-    color: #dc2626;
-    background: rgba(220, 38, 38, 0.1);
+    color: var(--hos-danger);
+    background: var(--hos-danger-soft);
 }
 
 .rm-btn {
@@ -53,7 +53,7 @@
     gap: 0.45rem;
     padding: 0.5rem 0.8rem;
     border-radius: 10px;
-    border: 1px solid #0369a1;
+    border: 1px solid var(--hos-primary);
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
@@ -61,23 +61,23 @@
 }
 
 .rm-btn--primary {
-    background: #0369a1;
-    color: #fff;
+    background: var(--hos-primary);
+    color: var(--p-primary-contrast-color, #fff);
 }
 
 .rm-btn--ghost {
     background: transparent;
-    color: #475569;
-    border-color: #cbd5e1;
+    color: var(--hos-text-muted);
+    border-color: var(--hos-border);
 }
 
 .rm-btn--ghost:hover {
-    background: #f1f5f9;
+    background: var(--hos-surface-soft);
 }
 
 .rm-panel {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--hos-surface);
+    border: 1px solid var(--hos-border);
     border-radius: 14px;
     padding: 1.25rem;
 }
@@ -85,13 +85,13 @@
 .rm-empty {
     text-align: center;
     padding: 2rem;
-    color: #475569;
+    color: var(--hos-text-muted);
 }
 
 .rm-empty__icon {
     font-size: 1.8rem;
     margin-bottom: 0.4rem;
-    color: #f59e0b;
+    color: var(--hos-warning);
 }
 
 .rm-skel {
@@ -103,7 +103,7 @@
 .rm-row--skel {
     height: 90px;
     border-radius: 14px;
-    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background: linear-gradient(90deg, var(--hos-surface-soft) 25%, var(--hos-border) 50%, var(--hos-surface-soft) 75%);
     background-size: 400% 100%;
     animation: shimmer 1.4s infinite;
 }
@@ -120,8 +120,8 @@
 }
 
 .st-card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--hos-surface);
+    border: 1px solid var(--hos-border);
     border-radius: 14px;
     padding: 1.25rem;
 }
@@ -133,10 +133,14 @@
     margin-bottom: 1rem;
 }
 
+.st-card__head > i {
+    color: var(--hos-primary);
+}
+
 .st-card__title {
     font-size: 1rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--hos-text);
     margin: 0;
 }
 
@@ -165,24 +169,24 @@
 .ht-field > span {
     font-size: 0.78rem;
     font-weight: 600;
-    color: #334155;
+    color: var(--hos-text);
 }
 
 .ht-field input,
 .ht-field select {
     padding: 0.5rem 0.65rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--hos-border);
     border-radius: 8px;
     font-size: 0.9rem;
-    color: #0f172a;
-    background: #fff;
+    color: var(--hos-text);
+    background: var(--hos-surface);
 }
 
 .ht-field input:focus,
 .ht-field select:focus {
-    outline: 2px solid #0369a1;
+    outline: 2px solid var(--hos-primary);
     outline-offset: -1px;
-    border-color: #0369a1;
+    border-color: var(--hos-primary);
 }
 
 .ht-modules {
@@ -192,8 +196,8 @@
 }
 
 .ht-chip {
-    background: #e0f2fe;
-    color: #0369a1;
+    background: var(--hos-primary-soft);
+    color: var(--hos-primary);
     font-size: 0.78rem;
     font-weight: 600;
     padding: 0.25rem 0.6rem;
@@ -217,21 +221,21 @@
     gap: 0.8rem;
     padding: 0.9rem 1rem;
     border-radius: 12px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--hos-surface-soft);
+    border: 1px solid var(--hos-border);
     text-decoration: none;
-    color: #0f172a;
+    color: var(--hos-text);
     transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .st-link:hover {
-    border-color: #0369a1;
-    background: #f0f9ff;
+    border-color: var(--hos-primary);
+    background: var(--hos-primary-soft);
 }
 
 .st-link > i {
     font-size: 1.3rem;
-    color: #0369a1;
+    color: var(--hos-primary);
 }
 
 .st-link span {
@@ -240,6 +244,6 @@
 }
 
 .st-link small {
-    color: #64748b;
+    color: var(--hos-text-muted);
     font-size: 0.8rem;
 }

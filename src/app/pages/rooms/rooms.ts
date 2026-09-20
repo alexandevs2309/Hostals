@@ -2,9 +2,10 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, firstValueFrom } from 'rxjs';
-import { HotelService, RoomTypeDto } from '@/app/core/services/hotel.service';
+import { HotelService, NoHotelConfiguredError, RoomTypeDto } from '@/app/core/services/hotel.service';
 import { RoomService, Room, RoomType } from '@/app/core/services/room.service';
 import { DashboardService, MaintenanceTicketDto } from '@/app/core/services/dashboard.service';
+import { formatMoney } from '@/app/shared/utils/money';
 
 const STATUS_LABEL: Record<string, string> = {
     Available: 'Disponible',
@@ -77,6 +78,10 @@ export class RoomsPage implements OnInit {
 
     statusOptions = ['Todos', 'Available', 'Occupied', 'Housekeeping', 'Maintenance', 'Dirty'];
 
+    fmtMoney(n: number): string {
+        return formatMoney(n);
+    }
+
     countByStatus = computed(() => {
         const counts: Record<string, number> = {};
         for (const r of this.rooms()) {
@@ -102,31 +107,15 @@ export class RoomsPage implements OnInit {
     }
 
     private resolveHotel(): void {
-        const stored = localStorage.getItem('auth_hotel_id');
-        const onHotel = (hotel: { id: string; name: string }): void => {
-            this.hotelId.set(hotel.id);
-            this.hotelName.set(hotel.name);
-            this.load();
-        };
-
-        if (stored) {
-            this.hotelsApi.getHotelById(stored).subscribe({
-                next: onHotel,
-                error: () => this.fail('No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
-            });
-            return;
-        }
-
-        this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-            next: (page) => {
-                const hotel = page.items[0];
-                if (hotel) {
-                    onHotel(hotel);
-                } else {
-                    this.fail('No hay ninguna propiedad configurada todavía.');
-                }
+        this.hotelsApi.resolveActiveHotel().subscribe({
+            next: (hotel) => {
+                this.hotelId.set(hotel.id);
+                this.hotelName.set(hotel.name);
+                this.load();
             },
-            error: () => this.fail('No se pudo cargar la propiedad.')
+            error: (err) => this.fail(err instanceof NoHotelConfiguredError
+                ? 'No hay ninguna propiedad configurada todavía.'
+                : 'No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
         });
     }
 

@@ -6,11 +6,12 @@ import { AppSidebar } from './app.sidebar';
 import { AppFooter } from './app.footer';
 import { LayoutService } from '@/app/layout/service/layout.service';
 import { AuthService } from '@/app/core/services/auth.service';
+import { ConfirmDialog } from 'primeng/confirmdialog';
 
 @Component({
     selector: 'app-layout',
     standalone: true,
-    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter],
+    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, ConfirmDialog],
     template: `<div class="layout-wrapper" [ngClass]="containerClass()">
         <app-topbar></app-topbar>
         <app-sidebar></app-sidebar>
@@ -21,6 +22,7 @@ import { AuthService } from '@/app/core/services/auth.service';
             <app-footer></app-footer>
         </div>
         <div class="layout-mask"></div>
+        <p-confirmDialog [style]="{ width: '24rem' }"></p-confirmDialog>
     </div> `
 })
 export class AppLayout {

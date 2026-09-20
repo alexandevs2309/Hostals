@@ -66,7 +66,7 @@
             </div>
             <div class="rv-search">
                 <i class="pi pi-search"></i>
-                <input [(ngModel)]="search" placeholder="Buscar nº, huésped, habitación…" />
+                <input [(ngModel)]="search" (ngModelChange)="onSearchChange()" placeholder="Buscar nº, huésped, habitación…" />
             </div>
         </div>
 
@@ -101,7 +101,7 @@
                         <div class="rv-c rv-c--guest">
                             <span class="rv-guest">{{ r.guestName }}</span>
                             <span class="rv-hint">{{ r.guestEmail }}</span>
-                            <span class="rv-hint">{{ r.numberOfGuests }} hués. · {{ r.isFullyPaid ? 'Pagada' : 'Saldo \$' + (r.balanceDue | number:'1.2-2') }}</span>
+                            <span class="rv-hint">{{ r.numberOfGuests }} hués. · {{ r.isFullyPaid ? 'Pagada' : 'Saldo ' + fmtMoney(r.balanceDue) }}</span>
                         </div>
                         <div class="rv-c rv-c--room">
                             <span class="rv-roomnum">{{ r.roomNumber }}</span>
@@ -153,7 +153,7 @@
             <div class="rv-modal rv-modal--wide" (click)="$event.stopPropagation()">
                 <div class="rv-modal__head">
                     <h3>Nueva reserva · {{ hotelName() }}</h3>
-                    <button class="rv-modal__x" (click)="showCreate.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="rv-modal__x" (click)="showCreate.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="rv-modal__body">
                     <div class="rv-form-grid">
@@ -237,14 +237,14 @@
                                 <select [(ngModel)]="form.roomId">
                                     <option [ngValue]="''" disabled>{{ loadingRooms() ? 'Cargando…' : 'Selecciona una habitación' }}</option>
                                     @for (room of availableRooms(); track room.id) {
-                                        <option [ngValue]="room.id">{{ room.roomNumber }} · {{ room.roomTypeName }} · \${{ room.price | number:'1.2-2' }} ({{ room.maxOccupancy }} hués.)</option>
+                                        <option [ngValue]="room.id">{{ room.roomNumber }} · {{ room.roomTypeName }} · {{ fmtMoney(room.price) }} ({{ room.maxOccupancy }} hués.)</option>
                                     }
                                 </select>
                             </label>
                             @if (availableRooms().length) {
                                 <label class="rv-field rv-field--split">
                                     <span>Tarifa por noche</span>
-                                    <span class="rv-field__static">\${{ selectedRoomPrice() | number:'1.2-2' }}</span>
+                                    <span class="rv-field__static">{{ fmtMoney(selectedRoomPrice()) }}</span>
                                 </label>
                             }
                             @if (!loadingRooms() && form.checkIn && form.checkOut && !availableRooms().length) {
@@ -273,7 +273,7 @@
             <div class="rv-modal" (click)="$event.stopPropagation()">
                 <div class="rv-modal__head">
                     <h3>Cancelar reserva {{ cancelTarget()?.reservationNumber }}</h3>
-                    <button class="rv-modal__x" (click)="showCancel.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="rv-modal__x" (click)="showCancel.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="rv-modal__body">
                     <p class="rv-modal__text">

@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { DashboardService, ChartPointDto } from '@/app/core/services/dashboard.service';
+import { formatMoney } from '@/app/shared/utils/money';
 
 type Period = 'week' | 'month' | 'year';
 
@@ -31,21 +32,27 @@ export class AnalyticsPage implements OnInit {
         { value: 'year', label: 'Año' }
     ];
 
+    private static readonly CURRENCY_KEYS = new Set(['AverageDailyRate', 'RevenuePerAvailableRoom', 'TotalRevenue']);
+    private static readonly PERCENT_KEYS = new Set(['OccupancyRate']);
+
     barHeight = (value: number, max: number): string => {
-        if (max <= 0 || value <= 0) return '4px';
-        const pct = Math.max(6, Math.round((value / max) * 100));
-        return pct + '%';
+        if (max <= 0 || value <= 0) return '0%';
+        return Math.max(6, Math.round((value / max) * 100)) + '%';
     };
 
     fmtKpi(key: string): string {
         const v = this.kpis()[key] ?? 0;
-        if (key.toLowerCase().includes('rate') || key.toLowerCase().includes('occupancy')) {
+        if (AnalyticsPage.PERCENT_KEYS.has(key)) {
             return v + ' %';
         }
-        if (key.toLowerCase().includes('revenue') || key.toLowerCase().includes('adr') || key.toLowerCase().includes('revpar')) {
-            return '$' + Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 });
+        if (AnalyticsPage.CURRENCY_KEYS.has(key)) {
+            return formatMoney(v);
         }
         return Number(v).toLocaleString('en-US');
+    }
+
+    fmtMoney(n: number): string {
+        return formatMoney(n);
     }
 
     kpiLabel(key: string): string {

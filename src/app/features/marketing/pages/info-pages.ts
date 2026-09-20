@@ -86,7 +86,7 @@ import { RevealDirective, StaggerDirective } from '@/app/shared/directives/revea
         `
             .gos-compare {
                 border: 1px solid var(--hos-border);
-                border-radius: var(--hos-radius-lg);
+                border-radius: var(--hos-radius-xl);
                 overflow: hidden;
                 background: var(--hos-surface);
                 max-width: 760px;
@@ -251,7 +251,7 @@ export class PricingPage {
             }
             .gos-value-card {
                 border: 1px solid var(--hos-border);
-                border-radius: var(--hos-radius-lg);
+                border-radius: var(--hos-radius-xl);
                 padding: 30px 26px;
                 background: var(--hos-surface);
                 transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -444,7 +444,7 @@ export class AboutPage {
             }
             .gos-contact-form {
                 border: 1px solid var(--hos-border);
-                border-radius: var(--hos-radius-lg);
+                border-radius: var(--hos-radius-xl);
                 padding: 34px;
                 background: var(--hos-surface);
                 box-shadow: var(--hos-shadow);
@@ -474,7 +474,7 @@ export class AboutPage {
             }
             .gos-contact-success {
                 border: 1px solid var(--hos-teal-300);
-                border-radius: var(--hos-radius-lg);
+                border-radius: var(--hos-radius-xl);
                 padding: 3rem 2rem;
                 background: var(--hos-surface);
                 box-shadow: var(--hos-shadow);

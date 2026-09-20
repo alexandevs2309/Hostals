@@ -2,9 +2,10 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, firstValueFrom } from 'rxjs';
-import { HotelService } from '@/app/core/services/hotel.service';
+import { HotelService, NoHotelConfiguredError } from '@/app/core/services/hotel.service';
 import { ReservationService, Reservation } from '@/app/core/services/reservation.service';
-import { FinanceService, FinanceSummary, Invoice, InvoiceDetail, Payment } from '@/app/core/services/finance.service';
+import { FinanceService, FinanceSummary, Invoice, InvoiceDetail, NightAuditReport, Payment } from '@/app/core/services/finance.service';
+import { formatMoney } from '@/app/shared/utils/money';
 
 const PAYMENT_STATUS_LABEL: Record<string, string> = {
     Completed: 'Completado',
@@ -70,6 +71,8 @@ export class FinancePage implements OnInit {
     invoiceDetail = signal<InvoiceDetail | null>(null);
     detailLoading = signal(false);
     showPayInvoice = signal(false);
+    showRefund = signal(false);
+    refundTarget = signal<Payment | null>(null);
 
     reservations = signal<Reservation[]>([]);
 
@@ -89,6 +92,24 @@ export class FinancePage implements OnInit {
         paymentMethod: 'Cash'
     };
 
+    refundForm = {
+        amount: 0,
+        reason: ''
+    };
+
+    showNightAudit = signal(false);
+    nightAudit = signal<NightAuditReport | null>(null);
+    nightAuditBusy = signal(false);
+
+    showFolioPos = signal(false);
+    posBusy = signal(false);
+    folioPos = {
+        description: '',
+        unitPrice: 0,
+        quantity: 1,
+        category: 'Food'
+    };
+
     statusOptionsPayment = ['Todos', 'Completed', 'Pending', 'Failed', 'Refunded'];
     statusOptionsInvoice = ['Todos', 'Draft', 'Issued', 'Sent', 'Paid', 'Overdue'];
 
@@ -103,28 +124,15 @@ export class FinancePage implements OnInit {
     }
 
     private resolveHotel(): void {
-        const stored = localStorage.getItem('auth_hotel_id');
-        const onHotel = (hotel: { id: string; name: string }): void => {
-            this.hotelId.set(hotel.id);
-            this.hotelName.set(hotel.name);
-            this.loadAll();
-        };
-
-        if (stored) {
-            this.hotelsApi.getHotelById(stored).subscribe({
-                next: onHotel,
-                error: () => this.fail('No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
-            });
-            return;
-        }
-
-        this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-            next: (page) => {
-                const hotel = page.items[0];
-                if (hotel) onHotel(hotel);
-                else this.fail('No hay ninguna propiedad configurada todavía.');
+        this.hotelsApi.resolveActiveHotel().subscribe({
+            next: (hotel) => {
+                this.hotelId.set(hotel.id);
+                this.hotelName.set(hotel.name);
+                this.loadAll();
             },
-            error: () => this.fail('No se pudo cargar la propiedad.')
+            error: (err) => this.fail(err instanceof NoHotelConfiguredError
+                ? 'No hay ninguna propiedad configurada todavía.'
+                : 'No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
         });
     }
 
@@ -154,7 +162,7 @@ export class FinancePage implements OnInit {
         if (!id) return;
         this.financeApi.getPayments(
             { pageNumber: this.page(), pageSize: this.pageSize },
-            { hotelId: id, status: undefined, search: undefined }
+            { hotelId: id, status: this.filterStatus() === 'Todos' ? undefined : this.filterStatus(), search: this.search().trim() || undefined }
         ).subscribe({
             next: (page) => {
                 this.payments.set(page.items);
@@ -169,7 +177,7 @@ export class FinancePage implements OnInit {
         if (!id) return;
         this.financeApi.getInvoices(
             { pageNumber: this.page(), pageSize: this.pageSize },
-            { hotelId: id, status: undefined, search: undefined }
+            { hotelId: id, status: this.filterStatus() === 'Todos' ? undefined : this.filterStatus(), search: this.search().trim() || undefined }
         ).subscribe({
             next: (page) => {
                 this.invoices.set(page.items);
@@ -195,6 +203,25 @@ export class FinancePage implements OnInit {
         this.page.set(1);
         this.filterStatus.set('Todos');
         this.search.set('');
+        this.reloadTab();
+    }
+
+    onStatusFilter(status: string): void {
+        this.filterStatus.set(status);
+        this.page.set(1);
+        this.reloadTab();
+    }
+
+    onSearchChange(): void {
+        this.page.set(1);
+        this.reloadTab();
+    }
+
+    private reloadTab(): void {
+        const id = this.hotelId();
+        if (!id) return;
+        if (this.tab() === 'payments') this.loadPayments();
+        else this.loadInvoices();
     }
 
     label(s: string): string {
@@ -219,7 +246,7 @@ export class FinancePage implements OnInit {
     }
 
     fmtMoney(n: number): string {
-        return '$' + (n ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return formatMoney(n);
     }
 
     private act(title: string, fn: () => Promise<unknown>): void {
@@ -299,6 +326,27 @@ export class FinancePage implements OnInit {
         this.act('Factura cancelada.', () => firstValueFrom(this.financeApi.cancelInvoice(i.id)));
     }
 
+    sendInvoice(i: Invoice): void {
+        this.act('Factura enviada al cliente.', () => firstValueFrom(this.financeApi.sendInvoice(i.id)));
+    }
+
+    openRefund(p: Payment): void {
+        this.refundTarget.set(p);
+        this.refundForm = { amount: p.amount, reason: '' };
+        this.showRefund.set(true);
+    }
+
+    submitRefund(): void {
+        const p = this.refundTarget();
+        if (!p || this.refundForm.amount <= 0) return;
+        this.showRefund.set(false);
+        this.act('Pago reembolsado.', () => firstValueFrom(this.financeApi.refundPayment(
+            p.id,
+            Number(this.refundForm.amount),
+            this.refundForm.reason.trim() || undefined
+        )));
+    }
+
     viewInvoice(i: { id: string }): void {
         this.invoiceDetail.set(null);
         this.showDetail.set(true);
@@ -310,6 +358,69 @@ export class FinancePage implements OnInit {
             },
             error: () => {
                 this.detailLoading.set(false);
+            }
+        });
+    }
+
+    // ── Night audit ───────────────────────────────────────
+    runNightAudit(): void {
+        const id = this.hotelId();
+        if (!id || this.nightAuditBusy()) return;
+        this.nightAuditBusy.set(true);
+        this.nightAudit.set(null);
+        this.showNightAudit.set(true);
+        this.financeApi.runNightAudit({ hotelId: id }).subscribe({
+            next: (report) => {
+                this.nightAudit.set(report);
+                this.nightAuditBusy.set(false);
+                this.loadAll();
+            },
+            error: (e) => {
+                this.msg.set(e?.error ?? 'No se pudo ejecutar el night audit.');
+                this.msgError.set(true);
+                this.nightAuditBusy.set(false);
+                this.showNightAudit.set(false);
+            }
+        });
+    }
+
+    categoryLabel(c: string): string {
+        return ({ Room: 'Habitación', Food: 'Alimentos', Beverage: 'Bebidas', Service: 'Servicio', Other: 'Otros' } as Record<string, string>)[c] ?? c;
+    }
+
+    // ── POS al folio ───────────────────────────────────────
+    openFolioPos(): void {
+        this.folioPos = { description: '', unitPrice: 0, quantity: 1, category: 'Food' };
+        this.showFolioPos.set(true);
+    }
+
+    canAddFolioPos(): boolean {
+        return !!this.folioPos.description.trim() && this.folioPos.unitPrice > 0 && this.folioPos.quantity > 0;
+    }
+
+    submitFolioPos(): void {
+        const d = this.invoiceDetail();
+        if (!d?.reservationId || !this.canAddFolioPos()) return;
+        this.showFolioPos.set(false);
+        this.posBusy.set(true);
+        this.msg.set('');
+        this.financeApi.addFolioItem(d.reservationId, {
+            description: this.folioPos.description.trim(),
+            unitPrice: Number(this.folioPos.unitPrice),
+            quantity: Number(this.folioPos.quantity),
+            category: this.folioPos.category
+        }).subscribe({
+            next: () => {
+                this.msg.set('Cargo agregado al folio.');
+                this.msgError.set(false);
+                this.posBusy.set(false);
+                this.viewInvoice(d);
+                this.loadAll();
+            },
+            error: (e) => {
+                this.msg.set(e?.error ?? 'La operación falló.');
+                this.msgError.set(true);
+                this.posBusy.set(false);
             }
         });
     }

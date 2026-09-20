@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { HotelService, RoomTypeDto } from '@/app/core/services/hotel.service';
+import { HotelService, NoHotelConfiguredError, RoomTypeDto } from '@/app/core/services/hotel.service';
 import { ChannelService, Channel } from '@/app/core/services/channel.service';
 import { OnboardingService, OnboardingStatus } from '@/app/core/services/onboarding.service';
+import { formatMoney } from '@/app/shared/utils/money';
 import { RateService } from '@/app/core/services/rate.service';
 
 const CHANNEL_TYPES = ['Ota', 'Agency', 'Phone', 'WalkIn', 'Site'];
@@ -84,31 +85,15 @@ export class OnboardingPage implements OnInit {
     }
 
     private resolveHotel(): void {
-        const stored = localStorage.getItem('auth_hotel_id');
-        const onHotel = (hotel: { id: string; name: string }): void => {
-            this.hotelId.set(hotel.id);
-            this.hotelName.set(hotel.name);
-            this.load();
-        };
-
-        if (stored) {
-            this.hotelsApi.getHotelById(stored).subscribe({
-                next: onHotel,
-                error: () => this.fail('No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
-            });
-            return;
-        }
-
-        this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-            next: (page) => {
-                const hotel = page.items[0];
-                if (hotel) {
-                    onHotel(hotel);
-                } else {
-                    this.fail('No hay ninguna propiedad configurada todavía.');
-                }
+        this.hotelsApi.resolveActiveHotel().subscribe({
+            next: (hotel) => {
+                this.hotelId.set(hotel.id);
+                this.hotelName.set(hotel.name);
+                this.load();
             },
-            error: () => this.fail('No se pudo cargar la propiedad.')
+            error: (err) => this.fail(err instanceof NoHotelConfiguredError
+                ? 'No hay ninguna propiedad configurada todavía.'
+                : 'No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
         });
     }
 
@@ -242,7 +227,7 @@ export class OnboardingPage implements OnInit {
     }
 
     fmtMoney(n: number): string {
-        return '$' + (n ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return formatMoney(n);
     }
 
     private act(fn: () => Promise<unknown>, ok: string): void {

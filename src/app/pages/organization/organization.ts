@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ConfirmationService } from 'primeng/api';
 import {
   OrganizationService,
   OrganizationSummary,
@@ -38,6 +39,7 @@ interface EditForm {
 })
 export class OrganizationPage implements OnInit {
   private organizationApi = inject(OrganizationService);
+  private confirmation = inject(ConfirmationService);
 
   readonly orgRoles = ORG_ROLES;
   readonly propertyRoles = PROPERTY_ROLES;
@@ -153,10 +155,18 @@ export class OrganizationPage implements OnInit {
   }
 
   removeMember(m: OrganizationMemberDto): void {
-    if (!confirm(`¿Eliminar a ${m.fullName} de la organización?`)) return;
-    this.organizationApi.removeMember(m.userId).subscribe({
-      next: () => this.loadMembers(),
-      error: (err) => this.editMsg.set({ ok: false, text: err?.error ?? 'No se pudo eliminar el miembro.' })
+    this.confirmation.confirm({
+      message: `¿Eliminar a ${m.fullName} de la organización?`,
+      header: 'Eliminar miembro',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.organizationApi.removeMember(m.userId).subscribe({
+          next: () => this.loadMembers(),
+          error: (err) => this.editMsg.set({ ok: false, text: err?.error ?? 'No se pudo eliminar el miembro.' })
+        });
+      }
     });
   }
 

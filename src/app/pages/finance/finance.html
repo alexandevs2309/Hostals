@@ -19,6 +19,9 @@
             <button class="fn-btn fn-btn--ghost" (click)="loadReservationsForPicker('invoice')">
                 <i class="pi pi-file-plus"></i> Facturar reserva
             </button>
+            <button class="fn-btn fn-btn--ghost" [disabled]="nightAuditBusy()" (click)="runNightAudit()">
+                <i class="pi pi-moon"></i> {{ nightAuditBusy() ? 'Procesando…' : 'Night audit' }}
+            </button>
         </div>
     </div>
 
@@ -92,12 +95,12 @@
             <div class="fn-toolbar">
                 <div class="fn-pills">
                     @for (s of statusOptionsPayment; track s) {
-                        <button class="fn-pill" [class.fn-pill--on]="filterStatus() === s" (click)="filterStatus.set(s)">{{ s === 'Todos' ? 'Todos' : payStatusLabel(s) }}</button>
+                        <button class="fn-pill" [class.fn-pill--on]="filterStatus() === s" (click)="onStatusFilter(s)">{{ s === 'Todos' ? 'Todos' : payStatusLabel(s) }}</button>
                     }
                 </div>
                 <div class="fn-search">
                     <i class="pi pi-search"></i>
-                    <input [(ngModel)]="search" placeholder="Buscar reserva, huésped, referencia…" />
+                    <input [(ngModel)]="search" (ngModelChange)="onSearchChange()" placeholder="Buscar reserva, huésped, referencia…" />
                 </div>
             </div>
 
@@ -116,6 +119,7 @@
                         <div class="fn-c fn-c--ref">Referencia</div>
                         <div class="fn-c fn-c--num">Importe</div>
                         <div class="fn-c fn-c--status">Estado</div>
+                        <div class="fn-c fn-c--acts">Acciones</div>
                     </div>
                     @for (p of payments(); track p.id) {
                         <div class="fn-table__row" [class.fn-table__row--refund]="p.isRefund">
@@ -136,6 +140,11 @@
                             <div class="fn-c fn-c--status">
                                 <span class="fn-badge fn-badge--{{ p.status.toLowerCase() }}">{{ payStatusLabel(p.status) }}</span>
                             </div>
+                            <div class="fn-c fn-c--acts">
+                                @if (p.status === 'Completed' && !p.isRefund) {
+                                    <button class="fn-act fn-act--ghost" [disabled]="busy()" title="Reembolsar pago" (click)="openRefund(p)"><i class="pi pi-undo"></i> Reembolsar</button>
+                                }
+                            </div>
                         </div>
                     }
                 </div>
@@ -146,12 +155,12 @@
             <div class="fn-toolbar">
                 <div class="fn-pills">
                     @for (s of statusOptionsInvoice; track s) {
-                        <button class="fn-pill" [class.fn-pill--on]="filterStatus() === s" (click)="filterStatus.set(s)">{{ s === 'Todos' ? 'Todos' : invStatusLabel(s) }}</button>
+                        <button class="fn-pill" [class.fn-pill--on]="filterStatus() === s" (click)="onStatusFilter(s)">{{ s === 'Todos' ? 'Todos' : invStatusLabel(s) }}</button>
                     }
                 </div>
                 <div class="fn-search">
                     <i class="pi pi-search"></i>
-                    <input [(ngModel)]="search" placeholder="Buscar nº factura, cliente, reserva…" />
+                    <input [(ngModel)]="search" (ngModelChange)="onSearchChange()" placeholder="Buscar nº factura, cliente, reserva…" />
                 </div>
             </div>
 
@@ -191,6 +200,9 @@
                                 @if (i.status === 'Draft') {
                                     <button class="fn-act fn-act--ok" [disabled]="busy()" title="Emitir factura" (click)="issueInvoice(i)"><i class="pi pi-send"></i> Emitir</button>
                                 }
+                                @if (i.status === 'Issued') {
+                                    <button class="fn-act fn-act--ok" [disabled]="busy()" title="Enviar factura al cliente" (click)="sendInvoice(i)"><i class="pi pi-envelope"></i> Enviar</button>
+                                }
                                 @if (i.status !== 'Paid' && i.status !== 'Cancelled') {
                                     <button class="fn-act fn-act--warn" [disabled]="busy()" title="Cancelar factura" (click)="cancelInvoice(i)"><i class="pi pi-times"></i> Cancelar</button>
                                 }
@@ -216,7 +228,7 @@
             <div class="fn-modal" (click)="$event.stopPropagation()">
                 <div class="fn-modal__head">
                     <h3>Registrar pago</h3>
-                    <button class="fn-modal__x" (click)="showPayment.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="fn-modal__x" (click)="showPayment.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="fn-modal__body">
                     <label class="fn-field">
@@ -283,7 +295,7 @@
             <div class="fn-modal" (click)="$event.stopPropagation()">
                 <div class="fn-modal__head">
                     <h3>Facturar reserva</h3>
-                    <button class="fn-modal__x" (click)="showInvoiceFromReservation.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="fn-modal__x" (click)="showInvoiceFromReservation.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="fn-modal__body">
                     <label class="fn-field">
@@ -303,7 +315,7 @@
                         <span>Notas</span>
                         <textarea [(ngModel)]="form.notes" rows="2" placeholder="Notas de la factura…"></textarea>
                     </label>
-                    <p class="fn-hint-block">Se generarán líneas con el alojamiento (TARIFA × N noches) y cama extra si aplica, más IVA de la reserva.</p>
+                    <p class="fn-hint-block">Se generará una línea por noche del alojamiento (y cama extra si aplica), más IVA de la reserva. Para el cargo por noche a la cuenta del huésped usa «Night audit».</p>
                 </div>
                 <div class="fn-modal__foot">
                     <button class="fn-btn fn-btn--ghost" (click)="showInvoiceFromReservation.set(false)">Cancelar</button>
@@ -321,7 +333,7 @@
             <div class="fn-modal fn-modal--wide" (click)="$event.stopPropagation()">
                 <div class="fn-modal__head">
                     <h3>{{ invoiceDetail()?.invoiceNumber ?? 'Factura' }}</h3>
-                    <button class="fn-modal__x" (click)="showDetail.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="fn-modal__x" (click)="showDetail.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="fn-modal__body">
                     @if (detailLoading()) {
@@ -348,7 +360,7 @@
                             </div>
                             @for (l of inv.lineItems; track $index) {
                                 <div class="fn-inv-line">
-                                    <span class="fn-c--desc">{{ l.description }} <em class="fn-hint">{{ l.taxCode }}</em></span>
+                                    <span class="fn-c--desc">{{ l.description }} <em class="fn-hint">{{ categoryLabel(l.category) }} · {{ l.taxCode }}</em></span>
                                     <span class="fn-c--q">{{ l.quantity }}</span>
                                     <span class="fn-c--amt">{{ fmtMoney(l.unitPrice) }}</span>
                                     <span class="fn-c--amt fn-price">{{ fmtMoney(l.total) }}</span>
@@ -398,19 +410,22 @@
                                 <i class="pi pi-credit-card"></i> Registrar pago
                             </button>
                         }
+                        <button class="fn-btn fn-btn--ghost" [disabled]="posBusy()" (click)="openFolioPos()">
+                            <i class="pi pi-receipt"></i> Cargo al folio (POS)
+                        </button>
                     }
                 </div>
             </div>
         </div>
     }
 
-    <!-- ── Modal: pagar factura ──────────────────────────── -->
+<!-- ── Modal: pagar factura ──────────────────────────── -->
     @if (showPayInvoice()) {
         <div class="fn-overlay" (click)="showPayInvoice.set(false)">
             <div class="fn-modal" (click)="$event.stopPropagation()">
                 <div class="fn-modal__head">
                     <h3>Pago de factura {{ invoiceDetail()?.invoiceNumber }}</h3>
-                    <button class="fn-modal__x" (click)="showPayInvoice.set(false)"><i class="pi pi-times"></i></button>
+                    <button class="fn-modal__x" (click)="showPayInvoice.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
                 </div>
                 <div class="fn-modal__body">
                     <label class="fn-field">
@@ -432,6 +447,151 @@
                     <button class="fn-btn fn-btn--ghost" (click)="showPayInvoice.set(false)">Cancelar</button>
                     <button class="fn-btn fn-btn--primary" [disabled]="payInvoice.amount <= 0" (click)="submitInvoicePayment()">
                         <i class="pi pi-check"></i> Registrar pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── Modal: reembolsar pago ────────────────────────── -->
+    @if (showRefund()) {
+        <div class="fn-overlay" (click)="showRefund.set(false)">
+            <div class="fn-modal" (click)="$event.stopPropagation()">
+                <div class="fn-modal__head">
+                    <h3>Reembolsar pago · {{ refundTarget()?.reservationNumber }}</h3>
+                    <button class="fn-modal__x" (click)="showRefund.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="fn-modal__body">
+                    <label class="fn-field">
+                        <span>Importe a reembolsar</span>
+                        <input type="number" [(ngModel)]="refundForm.amount" min="0.01" step="0.01" />
+                        <span class="fn-hint">Máx. {{ fmtMoney(refundTarget()?.amount || 0) }}</span>
+                    </label>
+                    <label class="fn-field fn-field--full">
+                        <span>Motivo (opcional)</span>
+                        <input [(ngModel)]="refundForm.reason" placeholder="Ej. Cancelación de reserva, cambio de habitación…" />
+                    </label>
+                </div>
+                <div class="fn-modal__foot">
+                    <button class="fn-btn fn-btn--ghost" (click)="showRefund.set(false)">Cancelar</button>
+                    <button class="fn-btn fn-btn--primary" [disabled]="refundForm.amount <= 0 || refundForm.amount > (refundTarget()?.amount ?? 0)" (click)="submitRefund()">
+                        <i class="pi pi-undo"></i> Reembolsar
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── Modal: night audit ────────────────────────────── -->
+    @if (showNightAudit()) {
+        <div class="fn-overlay" (click)="showNightAudit.set(false)">
+            <div class="fn-modal fn-modal--wide" (click)="$event.stopPropagation()">
+                <div class="fn-modal__head">
+                    <h3>Night audit · {{ nightAudit()?.hotelName ?? '' }}</h3>
+                    <button class="fn-modal__x" (click)="showNightAudit.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="fn-modal__body">
+                    @if (nightAuditBusy()) {
+                        <div class="fn-skel-small"></div>
+                    } @else {
+                        @let na = nightAudit();
+                        @if (na) {
+                            <div class="fn-na-kpis">
+                                <div class="fn-na-kpi">
+                                    <span class="fn-na-kpi__label">Noches posteadas</span>
+                                    <span class="fn-na-kpi__value">{{ na.nightsPosted }}</span>
+                                </div>
+                                <div class="fn-na-kpi">
+                                    <span class="fn-na-kpi__label">Reservas auditadas</span>
+                                    <span class="fn-na-kpi__value">{{ na.reservationsAudited }}</span>
+                                </div>
+                                <div class="fn-na-kpi">
+                                    <span class="fn-na-kpi__label">NoShow</span>
+                                    <span class="fn-na-kpi__value">{{ na.noShowsMarked }}</span>
+                                </div>
+                                <div class="fn-na-kpi">
+                                    <span class="fn-na-kpi__label">Total posteado</span>
+                                    <span class="fn-na-kpi__value">{{ fmtMoney(na.totalPosted) }}</span>
+                                </div>
+                            </div>
+
+                            @if (na.alreadyRun) {
+                                <p class="fn-field__warn"><i class="pi pi-info-circle"></i> El night audit ya se había procesado para esta fecha: no se duplicaron cargos.</p>
+                            }
+
+                            @if (na.items.length) {
+                                <div class="fn-na-list">
+                                    <div class="fn-na-row fn-na-row--head">
+                                        <span>Reserva</span><span>Huésped</span><span>Hbit.</span><span>Noche</span><span>Acción</span><span>Importe</span>
+                                    </div>
+                                    @for (it of na.items; track $index) {
+                                        <div class="fn-na-row">
+                                            <span class="fn-mono">{{ it.reservationNumber }}</span>
+                                            <span class="fn-guest">{{ it.guestName }}</span>
+                                            <span>#{{ it.roomNumber }}</span>
+                                            <span>{{ it.night ? fmtDate(it.night) : '—' }}</span>
+                                            <span>
+                                                @if (it.action === 'Posted') {
+                                                    <span class="fn-badge fn-badge--posted">Posteada</span>
+                                                } @else {
+                                                    <span class="fn-badge fn-badge--noshow">NoShow</span>
+                                                }
+                                            </span>
+                                            <span class="fn-c--amt fn-price">{{ fmtMoney(it.amount) }}</span>
+                                        </div>
+                                    }
+                                </div>
+                            } @else if (!na.alreadyRun) {
+                                <p class="fn-hint-block">No había noches pendientes de postear ni llegadas vencidas.</p>
+                            }
+                        }
+                    }
+                </div>
+                <div class="fn-modal__foot">
+                    <button class="fn-btn fn-btn--ghost" (click)="showNightAudit.set(false)">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── Modal: cargo POS al folio ─────────────────────── -->
+    @if (showFolioPos()) {
+        <div class="fn-overlay" (click)="showFolioPos.set(false)">
+            <div class="fn-modal" (click)="$event.stopPropagation()">
+                <div class="fn-modal__head">
+                    <h3>Cargo al folio · {{ invoiceDetail()?.reservationNumber }}</h3>
+                    <button class="fn-modal__x" (click)="showFolioPos.set(false)" aria-label="Cerrar"><i class="pi pi-times"></i></button>
+                </div>
+                <div class="fn-modal__body">
+                    <label class="fn-field">
+                        <span>Concepto *</span>
+                        <input [(ngModel)]="folioPos.description" placeholder="Ej. Cena buffet, cóctel, lavandería…" />
+                    </label>
+                    <div class="fn-field fn-field--split">
+                        <label class="fn-field">
+                            <span>Precio unitario *</span>
+                            <input type="number" [(ngModel)]="folioPos.unitPrice" min="0.01" step="0.01" />
+                        </label>
+                        <label class="fn-field">
+                            <span>Cantidad *</span>
+                            <input type="number" [(ngModel)]="folioPos.quantity" min="1" step="1" />
+                        </label>
+                    </div>
+                    <label class="fn-field">
+                        <span>Categoría</span>
+                        <select [(ngModel)]="folioPos.category">
+                            <option value="Food">Alimentos</option>
+                            <option value="Beverage">Bebidas</option>
+                            <option value="Service">Servicio</option>
+                            <option value="Other">Otros</option>
+                        </select>
+                    </label>
+                    <p class="fn-hint-block">El cargo se suma al folio del huésped con su IVA correspondiente.</p>
+                </div>
+                <div class="fn-modal__foot">
+                    <button class="fn-btn fn-btn--ghost" (click)="showFolioPos.set(false)">Cancelar</button>
+                    <button class="fn-btn fn-btn--primary" [disabled]="!canAddFolioPos()" (click)="submitFolioPos()">
+                        <i class="pi pi-check"></i> Agregar al folio
                     </button>
                 </div>
             </div>

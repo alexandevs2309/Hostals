@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { I18nService } from '@/app/shared/services/i18n.service';
 
 @Component({
     standalone: true,
@@ -7,13 +8,13 @@ import { RouterModule } from '@angular/router';
     imports: [RouterModule],
     template: `
     <div class="layout-footer hos-footer">
-        <span class="hos-footer__copy">© {{ year }} Hospitality OS</span>
+        <span class="hos-footer__copy">© {{ year }} {{ i18n.t('brand.hospitality') }} {{ i18n.t('brand.os') }}</span>
         <span class="hos-footer__sep" aria-hidden="true">·</span>
-        <a class="hos-footer__link" routerLink="/legal/privacidad">Privacidad</a>
+        <a class="hos-footer__link" routerLink="/legal/privacidad">{{ i18n.t('footer.privacy') }}</a>
         <span class="hos-footer__sep" aria-hidden="true">·</span>
-        <a class="hos-footer__link" routerLink="/legal/terminos">Términos</a>
+        <a class="hos-footer__link" routerLink="/legal/terminos">{{ i18n.t('footer.terms') }}</a>
         <span class="hos-footer__sep" aria-hidden="true">·</span>
-        <span class="hos-footer__env">Demo</span>
+        <span class="hos-footer__env">{{ i18n.t('footer.demo') }}</span>
     </div>
     `,
     styles: [`
@@ -45,4 +46,5 @@ import { RouterModule } from '@angular/router';
 })
 export class AppFooter {
     year = new Date().getFullYear();
+    readonly i18n = inject(I18nService);
 }

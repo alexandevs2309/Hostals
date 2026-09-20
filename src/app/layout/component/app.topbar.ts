@@ -5,6 +5,7 @@ import { map } from 'rxjs';
 import { LayoutService } from '@/app/layout/service/layout.service';
 import { AuthService } from '@/app/core/services/auth.service';
 import { HotelService } from '@/app/core/services/hotel.service';
+import { I18nService } from '@/app/shared/services/i18n.service';
 
 @Component({
     selector: 'app-topbar',
@@ -17,31 +18,40 @@ import { HotelService } from '@/app/core/services/hotel.service';
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action"
                     (click)="layoutService.onMenuToggle()"
-                    aria-label="Toggle menú">
+                    [attr.aria-label]="i18n.t('topbar.toggleMenu')">
                 <i class="pi pi-bars"></i>
             </button>
-            <span class="hos-topbar__module">Dashboard</span>
+            <span class="hos-topbar__module">{{ i18n.t('topbar.module') }}</span>
         </div>
 
         <!-- derecha: acciones -->
         <div class="layout-topbar-actions">
 
             <button type="button" class="layout-topbar-action hos-topbar__action"
-                    title="Buscar" aria-label="Buscar">
+                    [attr.title]="i18n.t('topbar.search')" [attr.aria-label]="i18n.t('topbar.search')">
                 <i class="pi pi-search"></i>
             </button>
 
             <button type="button"
                     class="layout-topbar-action hos-topbar__action hos-topbar__action--notif"
-                    title="Notificaciones" aria-label="Notificaciones">
+                    [attr.title]="i18n.t('topbar.notifications')" [attr.aria-label]="i18n.t('topbar.notifications')">
                 <i class="pi pi-bell"></i>
                 <span class="hos-topbar__notif-dot" aria-hidden="true"></span>
             </button>
 
             <button type="button" class="layout-topbar-action hos-topbar__action"
                     (click)="toggleDarkMode()"
-                    [attr.aria-label]="layoutService.isDarkTheme() ? 'Modo claro' : 'Modo oscuro'">
+                    [attr.aria-label]="layoutService.isDarkTheme() ? i18n.t('theme.light') : i18n.t('theme.dark')">
                 <i [class]="layoutService.isDarkTheme() ? 'pi pi-sun' : 'pi pi-moon'"></i>
+            </button>
+
+            <button type="button"
+                    class="layout-topbar-action hos-topbar__action hos-topbar__lang"
+                    (click)="i18n.setLocale(i18n.isEn() ? 'es' : 'en')"
+                    [attr.aria-label]="i18n.t('lang.' + (i18n.isEn() ? 'es' : 'en'))"
+                    [title]="i18n.t('lang.' + (i18n.isEn() ? 'es' : 'en'))">
+                <i class="pi pi-globe"></i>
+                <span>{{ i18n.isEn() ? 'EN' : 'ES' }}</span>
             </button>
 
             <div class="hos-topbar__user">
@@ -106,6 +116,13 @@ import { HotelService } from '@/app/core/services/hotel.service';
         .hos-topbar__chevron {
             font-size: 0.6rem; color: var(--text-color-secondary);
         }
+        .hos-topbar__lang {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-family: var(--font-family);
+            font-size: 0.7rem; font-weight: 800;
+            color: var(--text-color-secondary);
+        }
+        .hos-topbar__lang:hover { color: var(--primary-color); }
         @media (max-width: 991px) {
             .hos-topbar__user-info,
             .hos-topbar__chevron { display: none; }
@@ -115,6 +132,8 @@ import { HotelService } from '@/app/core/services/hotel.service';
 })
 export class AppTopbar implements OnInit {
     layoutService = inject(LayoutService);
+
+    readonly i18n = inject(I18nService);
 
     userName = signal('');
     initials = signal('');

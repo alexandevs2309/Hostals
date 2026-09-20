@@ -1,7 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
+
+/** Error de dominio: no hay ninguna propiedad activa ni configurada. */
+export class NoHotelConfiguredError extends Error {
+  constructor() {
+    super('No hay ninguna propiedad configurada todavía.');
+    this.name = 'NoHotelConfiguredError';
+  }
+}
 
 export interface Hotel {
   id: string;
@@ -154,6 +162,30 @@ export class HotelService {
     return this.http.get<Hotel>(`${this.hotelsUrl}/${id}`);
   }
 
+  // Resolver la propiedad activa: la almacenada en sesión o, si no hay, la primera disponible.
+  resolveActiveHotel(): Observable<Hotel> {
+    const persist = (hotel: Hotel): Hotel => {
+      if (hotel.currency) {
+        localStorage.setItem('auth_hotel_currency', hotel.currency);
+      }
+      return hotel;
+    };
+
+    const hotelId = localStorage.getItem('auth_hotel_id');
+    if (hotelId) {
+      return this.getHotelById(hotelId).pipe(map(persist));
+    }
+    return this.getHotels({ pageNumber: 1, pageSize: 1 }).pipe(
+      map((page) => {
+        const hotel = page.items[0];
+        if (!hotel) {
+          throw new NoHotelConfiguredError();
+        }
+        return persist(hotel);
+      })
+    );
+  }
+
   // Crear nuevo hotel
   createHotel(hotelData: CreateHotelRequest): Observable<Hotel> {
     return this.http.post<Hotel>(this.hotelsUrl, hotelData);
@@ -189,8 +221,12 @@ export class HotelService {
     return this.http.get<HotelNameDto[]>(`${this.hotelsUrl}/names`);
   }
 
-  createHotelRoomType(hotelId: string, command: { name: string; description?: string; basePrice: number; capacity?: number }): Observable<RoomTypeDto> {
+  createHotelRoomType(hotelId: string, command: { name: string; description?: string; basePrice: number; capacity?: number; extraBedCapacity?: number; extraBedPrice?: number }): Observable<RoomTypeDto> {
     return this.http.post<RoomTypeDto>(`${this.hotelsUrl}/${hotelId}/room-types`, command);
+  }
+
+  updateHotelRoomType(hotelId: string, roomTypeId: string, command: { name: string; description?: string; basePrice: number; capacity?: number; extraBedCapacity?: number; extraBedPrice?: number }): Observable<RoomTypeDto> {
+    return this.http.put<RoomTypeDto>(`${this.hotelsUrl}/${hotelId}/room-types/${roomTypeId}`, command);
   }
 
   deleteHotelRoomType(hotelId: string, roomTypeId: string): Observable<void> {

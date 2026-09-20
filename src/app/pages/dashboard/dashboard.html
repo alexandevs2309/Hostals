@@ -1,0 +1,354 @@
+<!-- ════════════════════════════════════════════════════════════════════════
+     DASHBOARD — jerarquía L1/L2/L3/L4 sobre la Foundation hos-*
+     Solo presenta datos reales del DashboardService; sin lógica nueva.
+     ════════════════════════════════════════════════════════════════════════ -->
+
+<div class="hos-dash">
+
+<!-- ── Cabecera (hos-page-head) ───────────────────────────────── -->
+<header class="hos-page-head">
+    <div>
+        <h1 class="hos-page-head__title">Buenos días, equipo <span class="hos-wave" aria-hidden="true">👋</span></h1>
+        <p class="hos-page-head__sub">
+            {{ today }} · {{ hotelName() }}@if (lastUpdated()) { · Actualizado {{ updatedLabel() }} }
+        </p>
+    </div>
+    <div class="hos-page-head__actions">
+        <span class="hos-live-badge">
+            <span class="hos-live-dot" aria-hidden="true"></span> En vivo · 60s
+        </span>
+        <button class="hos-btn hos-btn--ghost" type="button" (click)="refresh()" [disabled]="refreshing()">
+            <i class="pi pi-refresh" [class.hos-spin]="refreshing()" aria-hidden="true"></i> Actualizar
+        </button>
+    </div>
+</header>
+
+@if (error()) {
+    <div class="hos-error" role="alert">
+        <span class="hos-error__icon" aria-hidden="true"><i class="pi pi-exclamation-triangle"></i></span>
+        <p class="hos-error__title">No se pudo cargar el dashboard</p>
+        <p class="hos-error__sub">{{ error() }}</p>
+        <div class="hos-error__action">
+            <button class="hos-btn" type="button" (click)="refresh()">Reintentar</button>
+        </div>
+    </div>
+}
+
+@if (loading()) {
+    <div class="hos-dash__loading" aria-busy="true" aria-label="Cargando dashboard">
+        @for (i of [1, 2]; track i) {
+            <div class="hos-dash__skel hos-dash__skel--primary">
+                <span class="hos-skel hos-dash__skel-bar hos-dash__skel-bar--w40"></span>
+                <span class="hos-skel hos-dash__skel-bar hos-dash__skel-bar--lg hos-dash__skel-bar--w70"></span>
+            </div>
+        }
+        @for (i of [1, 2, 3, 4]; track i) {
+            <div class="hos-dash__skel hos-dash__skel--compact">
+                <span class="hos-skel hos-dash__skel-bar hos-dash__skel-bar--w35"></span>
+                <span class="hos-skel hos-dash__skel-bar hos-dash__skel-bar--w60"></span>
+            </div>
+        }
+        <div class="hos-dash__skel hos-dash__skel--panel">
+            <span class="hos-skel hos-dash__skel-bar hos-dash__skel-bar--lg hos-dash__skel-bar--w55"></span>
+            <span class="hos-skel hos-dash__skel-bar"></span>
+            <span class="hos-skel hos-dash__skel-bar hos-dash__skel-bar--w85"></span>
+            <span class="hos-skel hos-dash__skel-bar hos-dash__skel-bar--w70"></span>
+        </div>
+    </div>
+} @else {
+
+<!-- ── L1 · HOTEL PERFORMANCE (Ocupación + Ingresos) ─────────── -->
+<section class="hos-dash__primary" aria-label="Indicadores principales del día">
+    <div class="hos-metric hos-metric--primary">
+        <span class="hos-metric__label">Ocupación</span>
+        <span class="hos-metric__value">{{ metrics().occupancy }}%</span>
+        <span class="hos-metric__sub">{{ metrics().occupiedRooms ?? 0 }} de {{ metrics().rooms }} habitaciones ocupadas</span>
+        <span class="hos-metric__sub">{{ metrics().availableRooms }} disponibles · {{ metrics().maintenanceRooms ?? 0 }} en mantenimiento</span>
+    </div>
+    <div class="hos-metric hos-metric--primary">
+        <span class="hos-metric__label">Ingresos hoy</span>
+        <span class="hos-metric__value">${{ metrics().revenue | number }}</span>
+        <span class="hos-metric__sub"><i class="pi pi-calendar" aria-hidden="true"></i>&nbsp;Mes: ${{ metrics().monthlyRevenue ?? 0 | number }}</span>
+    </div>
+</section>
+
+<!-- ── L2 · OPERACIÓN Y PERFORMANCE SECUNDARIA ───────────────── -->
+<section class="hos-dash__secondary" aria-label="Operación del día">
+    <div class="hos-metric hos-metric--secondary">
+        <span class="hos-metric__label">Check-ins</span>
+        <span class="hos-metric__value">{{ metrics().checkIns }}</span>
+        <span class="hos-metric__sub">{{ metrics().availableRooms }} disponibles</span>
+    </div>
+    <div class="hos-metric hos-metric--secondary">
+        <span class="hos-metric__label">Check-outs</span>
+        <span class="hos-metric__value">{{ metrics().checkOutsToday ?? 0 }}</span>
+        <span class="hos-metric__sub">salidas de hoy</span>
+    </div>
+    <div class="hos-metric hos-metric--secondary">
+        <span class="hos-metric__label">ADR</span>
+        <span class="hos-metric__value">${{ metrics().adr }}</span>
+        <span class="hos-metric__sub">tarifa media por noche</span>
+    </div>
+    <div class="hos-metric hos-metric--secondary">
+        <span class="hos-metric__label">RevPAR</span>
+        <span class="hos-metric__value">${{ metrics().revpar }}</span>
+        <span class="hos-metric__sub">{{ kpis()['pendingBookings'] ?? 0 }} reservas por confirmar</span>
+    </div>
+</section>
+
+<!-- ── L3 · EXCEPCIONES Y OPERACIÓN ──────────────────────────── -->
+<section class="hos-dash__ops" aria-label="Operación y excepciones">
+
+    <div class="hos-panel">
+        <div class="hos-section__head">
+            <h2 class="hos-section__title"><i class="pi pi-sparkles" aria-hidden="true"></i>Housekeeping</h2>
+            <a class="hos-card__link" routerLink="/app/housekeeping">Ver panel <i class="pi pi-arrow-right" aria-hidden="true"></i></a>
+        </div>
+        <div class="hos-hk-stats">
+            <div class="hos-hk-stat">
+                <span class="hos-status-dot hos-status-dot--clean" aria-hidden="true"></span>
+                <span>Limpias</span>
+                <b>{{ hkCounts().clean }}</b>
+            </div>
+            <div class="hos-hk-stat">
+                <span class="hos-status-dot hos-status-dot--dirty" aria-hidden="true"></span>
+                <span>Pendientes</span>
+                <b>{{ hkCounts().pending }}</b>
+            </div>
+            <div class="hos-hk-stat">
+                <span class="hos-status-dot hos-status-dot--inspection" aria-hidden="true"></span>
+                <span>Inspección</span>
+                <b>{{ hkCounts().inspection }}</b>
+            </div>
+            <div class="hos-hk-stat">
+                <span class="hos-status-dot hos-status-dot--maintenance" aria-hidden="true"></span>
+                <span>Mant.</span>
+                <b>{{ hkCounts().maintenance }}</b>
+            </div>
+        </div>
+        @if (!housekeeping().length) {
+            <div class="hos-empty">
+                <p class="hos-empty__title">Nada pendiente de limpieza</p>
+            </div>
+        } @else {
+            @for (room of housekeeping(); track room.room) {
+                <div class="hos-hk-row">
+                    <div class="hos-hk-row__left">
+                        <span class="hos-status-dot" [class]="hkDotClass(room.status)" aria-hidden="true"></span>
+                        <span class="hos-hk-row__room">{{ room.room }}</span>
+                        <span class="hos-hk-row__who">{{ room.housekeeper }}</span>
+                    </div>
+                    <div class="hos-hk-row__right">
+                        <span class="hos-badge" [class]="hkBadge(room.status)">{{ room.status }}</span>
+                        @if (room.priority !== 'baja') {
+                            <span class="hos-priority" [class]="priorityClass(room.priority)">{{ room.priority }}</span>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="hos-panel">
+        <div class="hos-section__head">
+            <h2 class="hos-section__title"><i class="pi pi-wrench" aria-hidden="true"></i>Mantenimiento abierto</h2>
+            <a class="hos-card__link" routerLink="/app/maintenance">Ver todos <i class="pi pi-arrow-right" aria-hidden="true"></i></a>
+        </div>
+        @if (!tickets().length) {
+            <div class="hos-empty">
+                <p class="hos-empty__title">Sin tickets abiertos</p>
+            </div>
+        } @else {
+            @for (t of tickets(); track t.room) {
+                <div class="hos-ticket" [class]="'hos-ticket--' + t.priority">
+                    <div class="hos-ticket__left">
+                        <span class="hos-ticket__badge" [class]="'hos-ticket__badge--' + t.priority">{{ t.priority }}</span>
+                        <div>
+                            <span class="hos-ticket__room">Hab. {{ t.room }}</span>
+                            <span class="hos-ticket__issue">{{ t.issue }}</span>
+                        </div>
+                    </div>
+                    <div class="hos-ticket__right">
+                        @if (t.assignee) { <span class="hos-ticket__assignee">{{ t.assignee }}</span> }
+                        @if (t.sla) { <span class="hos-ticket__sla">SLA {{ t.sla }}</span> }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+</section>
+
+<!-- ── Reservaciones del día (región operativa) ──────────────── -->
+<section class="hos-dash__region" aria-label="Reservaciones del día">
+    <div class="hos-section__head">
+        <h2 class="hos-section__title"><i class="pi pi-calendar" aria-hidden="true"></i>Reservaciones del día</h2>
+        <a class="hos-card__link" routerLink="/app/reservations">Ver todas <i class="pi pi-arrow-right" aria-hidden="true"></i></a>
+    </div>
+    @if (!bookings().length) {
+        <div class="hos-empty">
+            <span class="hos-empty__icon" aria-hidden="true"><i class="pi pi-calendar-times"></i></span>
+            <p class="hos-empty__title">No hay reservaciones tocando hoy</p>
+        </div>
+    } @else {
+        <div class="hos-table">
+            <div class="hos-table__head">
+                <span>Huésped</span>
+                <span>Hab.</span>
+                <span>Check-in</span>
+                <span>Check-out</span>
+                <span>Estado</span>
+            </div>
+            @for (b of bookings(); track $index) {
+                <div class="hos-table__row">
+                    <span class="hos-table__name">{{ b.guest }}</span>
+                    <span class="hos-table__room">{{ b.room }}</span>
+                    <span>{{ b.checkIn }}</span>
+                    <span>{{ b.checkOut }}</span>
+                    <span class="hos-badge" [class]="statusClass(b.status)">{{ b.status }}</span>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+<!-- ── L4 · TENDENCIAS ───────────────────────────────────────── -->
+<section class="hos-dash__trends" aria-label="Tendencias">
+
+    <div class="hos-chart">
+        <div class="hos-chart__head">
+            <h2 class="hos-section__title"><i class="pi pi-chart-bar" aria-hidden="true"></i>Ocupación semanal</h2>
+            <span class="hos-tag">{{ avgOccupancy() }}% promedio</span>
+        </div>
+        @if (!occupancy().length) {
+            <div class="hos-empty"><p class="hos-empty__title">Sin datos de ocupación todavía</p></div>
+        } @else {
+            <div class="hos-dash__bars">
+                @for (pt of occupancy(); track pt.label) {
+                    <div class="hos-dash__bar-col">
+                        <span class="hos-dash__bar-val">{{ pt.value }}%</span>
+                        <div class="hos-dash__bar-wrap">
+                            <div class="hos-dash__bar" [style.height.%]="pt.value" [class.hos-dash__bar--peak]="pt.value >= 85"></div>
+                        </div>
+                        <span class="hos-dash__bar-lbl">{{ pt.label }}</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="hos-chart">
+        <div class="hos-chart__head">
+            <h2 class="hos-section__title"><i class="pi pi-dollar" aria-hidden="true"></i>Revenue mensual</h2>
+            @if (revenueTotal() > 0) {
+                <span class="hos-tag hos-tag--up"><i class="pi pi-chart-line" aria-hidden="true"></i>Total ${{ revenueTotal() | number }}</span>
+            }
+        </div>
+        @if (!revenue().length) {
+            <div class="hos-empty"><p class="hos-empty__title">Sin ingresos registrados todavía</p></div>
+        } @else {
+            <div class="hos-dash__bars hos-dash__bars--range">
+                @for (pt of revenue(); track pt.label) {
+                    <div class="hos-dash__bar-col">
+                        <div class="hos-dash__bar-wrap">
+                            <div class="hos-dash__bar" [style.height.%]="barPct(pt.value)"></div>
+                        </div>
+                        <span class="hos-dash__bar-lbl">{{ pt.label }}</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+</section>
+
+<!-- ── Analytics por rango (reporte real) ────────────────────── -->
+<section class="hos-panel" aria-label="Analytics por rango de fechas">
+    <div class="hos-section__head">
+        <h2 class="hos-section__title"><i class="pi pi-calendar" aria-hidden="true"></i>Analytics · ventana de fechas</h2>
+        <span class="hos-tag hos-tag--up"><i class="pi pi-chart-line" aria-hidden="true"></i>calculado sobre reservas reales</span>
+    </div>
+    <div class="hos-range">
+        <label class="hos-range__lbl">Desde
+            <input type="date" class="hos-input" [ngModel]="rangeFrom()" (ngModelChange)="rangeFrom.set($event)" />
+        </label>
+        <label class="hos-range__lbl">Hasta
+            <input type="date" class="hos-input" [ngModel]="rangeTo()" (ngModelChange)="rangeTo.set($event)" />
+        </label>
+        <button type="button" class="hos-btn hos-btn--primary" [disabled]="rangeLoading()" (click)="loadRangeAnalytics()">
+            <i class="pi pi-chart-line" aria-hidden="true"></i> Calcular
+        </button>
+    </div>
+    @if (rangeAnalytics(); as a) {
+        <div class="hos-metrics">
+            <div class="hos-metric hos-metric--secondary">
+                <span class="hos-metric__label">Ocupación</span>
+                <span class="hos-metric__value">{{ a.occupancyRate }}%</span>
+                <span class="hos-metric__sub">{{ a.soldNights }} de {{ a.availableNights }} noches</span>
+            </div>
+            <div class="hos-metric hos-metric--secondary">
+                <span class="hos-metric__label">ADR</span>
+                <span class="hos-metric__value">${{ a.averageDailyRate | number }}</span>
+                <span class="hos-metric__sub">tarifa promedio por noche</span>
+            </div>
+            <div class="hos-metric hos-metric--secondary">
+                <span class="hos-metric__label">RevPAR</span>
+                <span class="hos-metric__value">${{ a.revenuePerAvailableRoom | number }}</span>
+                <span class="hos-metric__sub">ingreso por habitación disponible</span>
+            </div>
+            <div class="hos-metric hos-metric--secondary">
+                <span class="hos-metric__label">Ingreso habitación</span>
+                <span class="hos-metric__value">${{ a.roomRevenue | number }}</span>
+                <span class="hos-metric__sub">{{ a.days }} días · {{ a.totalRooms }} habitación(es)</span>
+            </div>
+        </div>
+        @if (a.byRoomType.length) {
+            <div class="hos-range__table-wrap">
+                <table class="hos-range__table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Habitaciones</th>
+                            <th scope="col">Noches vendidas</th>
+                            <th scope="col">Ocupación</th>
+                            <th scope="col">ADR</th>
+                            <th scope="col">Ingreso</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (t of a.byRoomType; track t.roomTypeName) {
+                            <tr>
+                                <td>{{ t.roomTypeName }}</td>
+                                <td>{{ t.rooms }}</td>
+                                <td>{{ t.soldNights }}</td>
+                                <td>{{ t.occupancyRate }}%</td>
+                                <td>${{ t.averageDailyRate | number }}</td>
+                                <td>${{ t.revenue | number }}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (a.occupancySeries.length) {
+            <div class="hos-dash__bars hos-dash__bars--range hos-dash__bars--series">
+                @for (pt of a.occupancySeries; track pt.label) {
+                    <div class="hos-dash__bar-col">
+                        <div class="hos-dash__bar-wrap">
+                            <div class="hos-dash__bar" [style.height.%]="rangeBarPct(pt.value)"></div>
+                        </div>
+                        <span class="hos-dash__bar-lbl">{{ pt.label }}</span>
+                    </div>
+                }
+            </div>
+        }
+    } @else {
+        <div class="hos-empty">
+            <p class="hos-empty__title">Ajusta el rango y pulsa Calcular para ver el reporte real</p>
+        </div>
+    }
+</section>
+
+}
+
+</div>

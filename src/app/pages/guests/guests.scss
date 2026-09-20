@@ -67,10 +67,12 @@
 }
 .gs-search input { border: none; outline: none; background: transparent; color: var(--text-color); padding: .5rem 0; font-family: var(--font-family); font-size: .85rem; width: 260px; }
 
+.gs-table { overflow-x: auto; }
 .gs-table__head, .gs-table__row {
     display: grid;
     grid-template-columns: 1.6fr 1fr 1fr 90px 110px 130px 110px 150px;
     gap: .6rem; align-items: center; padding: .65rem 1.1rem;
+    min-width: 900px;
 }
 .gs-table__head {
     background: var(--surface-ground); font-size: .75rem;

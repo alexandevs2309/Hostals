@@ -83,6 +83,36 @@ export interface CreateInvoiceRequest {
     paymentTerms?: string;
 }
 
+export interface NightAuditItem {
+    reservationNumber: string;
+    guestName: string;
+    roomNumber: string;
+    action: 'Posted' | 'NoShow' | 'None';
+    night?: string;
+    amount: number;
+}
+
+export interface NightAuditReport {
+    auditDate: string;
+    hotelId: string;
+    hotelName: string;
+    currency: string;
+    nightsPosted: number;
+    reservationsAudited: number;
+    noShowsMarked: number;
+    totalPosted: number;
+    alreadyRun: boolean;
+    items: NightAuditItem[];
+}
+
+export interface FolioItemRequest {
+    description: string;
+    unitPrice: number;
+    quantity: number;
+    category: string;
+    taxCode?: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -141,5 +171,31 @@ export class FinanceService {
 
     registerInvoicePayment(id: string, amount: number, method: string): Observable<Invoice> {
         return this.http.post<Invoice>(`${this.financeUrl}/invoices/${id}/payment`, { amount, paymentMethod: method });
+    }
+
+    refundPayment(id: string, amount?: number, reason?: string): Observable<Payment> {
+        return this.http.post<Payment>(`${this.financeUrl}/payments/${id}/refund`, { amount, reason });
+    }
+
+    sendInvoice(id: string): Observable<Invoice> {
+        return this.http.post<Invoice>(`${this.financeUrl}/invoices/${id}/send`, {});
+    }
+
+    /** Ejecuta el night audit de la propiedad (idempotente por día). */
+    runNightAudit(filter: { hotelId?: string; forDate?: string }): Observable<NightAuditReport> {
+        let params = new HttpParams();
+        if (filter.hotelId) params = params.set('hotelId', filter.hotelId);
+        if (filter.forDate) params = params.set('forDate', filter.forDate);
+        return this.http.post<NightAuditReport>(`${this.financeUrl}/night-audit`, {}, { params });
+    }
+
+    /** Folio (factura viva) de una reserva; la crea en caliente si no existe. */
+    getFolio(reservationId: string): Observable<InvoiceDetail> {
+        return this.http.get<InvoiceDetail>(`${this.financeUrl}/reservations/${reservationId}/folio`);
+    }
+
+    /** Cargo POS (alimentos/bebidas/servicio) directo al folio de la reserva. */
+    addFolioItem(reservationId: string, data: FolioItemRequest): Observable<InvoiceDetail> {
+        return this.http.post<InvoiceDetail>(`${this.financeUrl}/reservations/${reservationId}/folio/items`, data);
     }
 }

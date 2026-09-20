@@ -1,0 +1,177 @@
+<div class="public-site" [class]="themeClass()">
+    @if (loading()) {
+        <div class="loading">Cargando sitio…</div>
+    } @else if (error()) {
+        <div class="error">
+            <h1>Sitio no disponible</h1>
+            <p>{{ error() }}</p>
+            <a routerLink="/">Volver al inicio</a>
+        </div>
+    } @else if (site(); as s) {
+        <header class="site-nav">
+            <div class="brand" [routerLink]="['/s', s.slug]">{{ s.name }}</div>
+            <nav class="menu">
+                @for (page of s.pages; track page.id) {
+                    <button
+                        type="button"
+                        class="menu-link"
+                        [class.active]="activePath() === page.path"
+                        (click)="go(page)"
+                    >
+                        {{ page.title }}
+                    </button>
+                }
+            </nav>
+        </header>
+
+        <main>
+            @if (activePage(); as page) {
+                <article>
+                    <h1 class="page-title">{{ page.title }}</h1>
+                    @if (page.metaDescription) {
+                        <p class="page-meta">{{ page.metaDescription }}</p>
+                    }
+
+                    @for (section of page.sections; track section.id) {
+                        @switch (section.sectionType) {
+                            @case ('Hero') {
+                                <section class="hero" [style.background-image]="field(section, 'imageUrl') ? 'url(' + field(section, 'imageUrl') + ')' : null">
+                                    <div class="hero__inner">
+                                        <h2>{{ field(section, 'headline', 'title') || section.name }}</h2>
+                                        <p>{{ field(section, 'subheadline', 'description', 'text') }}</p>
+                                        @if (field(section, 'buttonText'); as btn) {
+                                            <a class="btn" [href]="field(section, 'ctaUrl') || '#rooms'">{{ btn }}</a>
+                                        }
+                                    </div>
+                                </section>
+                            }
+                            @case ('Rooms') {
+                                <section class="rooms" id="rooms">
+                                    <h2>{{ field(section, 'title', 'headline') || section.name }}</h2>
+                                    @if (field(section, 'description', 'text'); as desc) {
+                                        <p>{{ desc }}</p>
+                                    }
+                                    @if (roomList().length) {
+                                        <div class="room-grid">
+                                            @for (room of roomList(); track room.id) {
+                                                <article class="room-card" [class.room-card--full]="!room.imageUrl">
+                                                    <div class="room-card__body">
+                                                        <h3>{{ room.name }}</h3>
+                                                        @if (room.description) {
+                                                            <p class="room-card__desc">{{ room.description }}</p>
+                                                        }
+                                                        @if (room.amenities.length) {
+                                                            <div class="room-card__tags">
+                                                                @for (a of room.amenities; track a) {
+                                                                    <span class="tag">{{ a }}</span>
+                                                                }
+                                                            </div>
+                                                        }
+                                                        <div class="room-card__foot">
+                                                            <span class="room-card__price">{{ money(room.basePrice) }} <em>/noche</em></span>
+                                                            @if (room.availableRooms > 0) {
+                                                                <span class="room-card__avail room-card__avail--ok">
+                                                                    <i class="pi pi-check-circle"></i>
+                                                                    {{ room.availableRooms }} de {{ room.totalRooms }} disponibles
+                                                                </span>
+                                                            } @else {
+                                                                <span class="room-card__avail room-card__avail--no">
+                                                                    <i class="pi pi-times-circle"></i>
+                                                                    Sin disponibilidad hoy
+                                                                </span>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </article>
+                                            }
+                                        </div>
+                                    } @else {
+                                        <p class="hint">Consulta disponibilidad y reserva directa sin comisiones.</p>
+                                    }
+                                </section>
+                            }
+                            @case ('Gallery') {
+                                @if (list(section, 'images').length) {
+                                    <section class="gallery">
+                                        <h2>{{ field(section, 'heading', 'title', 'headline') || section.name }}</h2>
+                                        <div class="gallery-grid">
+                                            @for (img of list(section, 'images'); track $index) {
+                                                @if (imgUrl(img); as url) {
+                                                    <figure class="gallery-item">
+                                                        <img [src]="url" [alt]="text(img, 'alt') || field(section, 'heading', 'title') " loading="lazy" />
+                                                    </figure>
+                                                }
+                                            }
+                                        </div>
+                                    </section>
+                                }
+                            }
+                            @case ('Testimonials') {
+                                @if (list(section, 'items').length) {
+                                    <section class="testimonials">
+                                        <h2>{{ field(section, 'heading', 'title', 'headline') || section.name }}</h2>
+                                        <div class="testi-grid">
+                                            @for (item of list(section, 'items'); track $index) {
+                                                <blockquote class="testi-card">
+                                                    <p class="testi-card__quote">{{ text(item, 'quote', 'text') }}</p>
+                                                    @if (ratingOf(item); as rating) {
+                                                        <span class="testi-card__stars">
+                                                            @for (star of stars(rating); track $index) {
+                                                                <i class="pi pi-star-fill"></i>
+                                                            }
+                                                        </span>
+                                                    }
+                                                    <footer>{{ text(item, 'name', 'author') }}</footer>
+                                                </blockquote>
+                                            }
+                                        </div>
+                                    </section>
+                                }
+                            }
+                            @case ('Amenities') {
+                                @if (list(section, 'items').length) {
+                                    <section class="amenities">
+                                        <h2>{{ field(section, 'heading', 'title', 'headline') || section.name }}</h2>
+                                        <div class="amenities-grid">
+                                            @for (item of list(section, 'items'); track $index) {
+                                                @if (text(item, 'name', 'label') || itemUrlText(item); as name) {
+                                                    <div class="amenity">
+                                                        @if (text(item, 'icon'); as icon) {
+                                                            <i class="pi {{ icon }}"></i>
+                                                        }
+                                                        <span>{{ name }}</span>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    </section>
+                                }
+                            }
+                            @case ('Contact') {
+                                <section class="contact">
+                                    <h2>{{ field(section, 'title', 'headline') || section.name }}</h2>
+                                    <p>{{ field(section, 'description', 'text') || 'Escríbenos para reservar.' }}</p>
+                                    <div class="contact-box">
+                                        <span>{{ s.hotelName || s.name }}</span>
+                                        <em>Reserva directa • Sin comisiones</em>
+                                    </div>
+                                </section>
+                            }
+                            @default {
+                                <section class="generic">
+                                    <h2>{{ field(section, 'title', 'headline') || section.name }}</h2>
+                                    <p>{{ field(section, 'description', 'text', 'subheadline') }}</p>
+                                </section>
+                            }
+                        }
+                    }
+                </article>
+            }
+        </main>
+
+        <footer>
+            <span>{{ s.name }} — </span>
+            <span>{{ s.hotelName || s.slug }}</span>
+        </footer>
+    }
+</div>

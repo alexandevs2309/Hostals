@@ -2,8 +2,10 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { HotelService } from '@/app/core/services/hotel.service';
+import { ConfirmationService } from 'primeng/api';
+import { HotelService, NoHotelConfiguredError } from '@/app/core/services/hotel.service';
 import { RateService, RoomRate, RatePlan } from '@/app/core/services/rate.service';
+import { formatMoney } from '@/app/shared/utils/money';
 
 interface RateRow {
     roomTypeId: string;
@@ -29,6 +31,7 @@ interface EditCell {
 export class RatesPage implements OnInit {
     private ratesApi = inject(RateService);
     private hotelsApi = inject(HotelService);
+    private confirmation = inject(ConfirmationService);
 
     hotelId = signal<string | null>(null);
     hotelName = signal('');
@@ -103,31 +106,15 @@ export class RatesPage implements OnInit {
     }
 
     private resolveHotel(): void {
-        const stored = localStorage.getItem('auth_hotel_id');
-        const onHotel = (hotel: { id: string; name: string }): void => {
-            this.hotelId.set(hotel.id);
-            this.hotelName.set(hotel.name);
-            this.load();
-        };
-
-        if (stored) {
-            this.hotelsApi.getHotelById(stored).subscribe({
-                next: onHotel,
-                error: () => this.fail('No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
-            });
-            return;
-        }
-
-        this.hotelsApi.getHotels({ pageNumber: 1, pageSize: 1 }).subscribe({
-            next: (page) => {
-                const hotel = page.items[0];
-                if (hotel) {
-                    onHotel(hotel);
-                } else {
-                    this.fail('No hay ninguna propiedad configurada todavía.');
-                }
+        this.hotelsApi.resolveActiveHotel().subscribe({
+            next: (hotel) => {
+                this.hotelId.set(hotel.id);
+                this.hotelName.set(hotel.name);
+                this.load();
             },
-            error: () => this.fail('No se pudo cargar la propiedad.')
+            error: (err) => this.fail(err instanceof NoHotelConfiguredError
+                ? 'No hay ninguna propiedad configurada todavía.'
+                : 'No se pudo cargar la propiedad. Vuelve a iniciar sesión.')
         });
     }
 
@@ -252,7 +239,7 @@ export class RatesPage implements OnInit {
     }
 
     fmtMoney(n: number): string {
-        return '$' + (n ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return formatMoney(n);
     }
 
     dayName(date: string): string {
@@ -338,10 +325,19 @@ export class RatesPage implements OnInit {
     }
 
     removePlan(p: RatePlan): void {
-        const id = this.hotelId();
-        if (!id) return;
-        this.act(() => firstValueFrom(this.ratesApi.deleteRatePlan(p.id, id)), `Plan «${p.name}» eliminado.`);
-        this.loadPlans();
+        this.confirmation.confirm({
+            message: `¿Eliminar el plan de tarifa «${p.name}»? Esta acción no se puede deshacer.`,
+            header: 'Eliminar plan',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Eliminar',
+            rejectLabel: 'Cancelar',
+            accept: () => {
+                const id = this.hotelId();
+                if (!id) return;
+                this.act(() => firstValueFrom(this.ratesApi.deleteRatePlan(p.id, id)), `Plan «${p.name}» eliminado.`);
+                this.loadPlans();
+            }
+        });
     }
 
     openAssign(p: RatePlan): void {

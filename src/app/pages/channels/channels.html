@@ -271,16 +271,21 @@
                                     <label class="hos-channel__label">Snippet para incrustar en tu sitio web</label>
                                     <pre class="hos-channel__code">{{ snippet() }}</pre>
 
-                                    <label class="hos-channel__label">Pasarelas de pago locales</label>
+                                    <label class="hos-channel__label">Pasarelas de pago</label>
                                     <div class="hos-channel__gateways">
                                         @for (g of gateways(); track g.name) {
                                             <div class="hos-channel__gateway">
                                                 <div>
                                                     <div class="hos-channel__gateway-name">{{ g.name }}</div>
                                                     <div class="hos-channel__gateway-sub">{{ g.displayName }}</div>
+                                                    <span class="hos-channel__mode"
+                                                          [class.hos-channel__mode--real]="g.isLive"
+                                                          [class.hos-channel__mode--sim]="!g.isLive">
+                                                        {{ g.isLive ? 'REAL' : 'SIMULADOR' }}
+                                                    </span>
                                                 </div>
                                                 <button type="button" class="hos-channel__btn hos-channel__btn--ghost" (click)="chargeSim(g.name)">
-                                                    Simular cargo $100
+                                                    {{ g.isLive ? 'Cobrar $100' : 'Simular cargo $100' }}
                                                 </button>
                                             </div>
                                             @if (payGateways()[g.name]) {

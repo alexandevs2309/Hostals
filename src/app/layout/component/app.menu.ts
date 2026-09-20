@@ -7,6 +7,7 @@ import { AuthService, User } from '@/app/core/services/auth.service';
 import { OrganizationService, UserProperty } from '@/app/core/services/organization.service';
 import { HotelService, Hotel } from '@/app/core/services/hotel.service';
 import { Role, hasAnyRole } from '@/app/core/auth/roles';
+import { I18nService } from '@/app/shared/services/i18n.service';
 
 interface HosNavItem {
     label: string;
@@ -19,27 +20,29 @@ interface HosNavItem {
 }
 
 const HOTEL_NAV: HosNavItem[] = [
-    { label: 'Dashboard',      icon: 'pi pi-th-large',    route: '/app'                },
-    { label: 'Puesta en marcha', icon: 'pi pi-rocket',    route: '/app/onboarding'     },
-    { label: 'Canales y ventas', icon: 'pi pi-globe',     route: '/app/channels'      },
-    { label: 'Automatización',  icon: 'pi pi-bolt',       route: '/app/workflows'     },
-    { separator: true,         label: 'Operación',        icon: '' },
-    { label: 'Reservaciones',  icon: 'pi pi-calendar',    route: '/app/reservations'  },
-    { label: 'Calendario',     icon: 'pi pi-calendar-clock', route: '/app/calendar'   },
-    { label: 'Habitaciones',   icon: 'pi pi-building',    route: '/app/rooms'         },
-    { label: 'Tarifas',        icon: 'pi pi-money-bill',  route: '/app/rates'         },
-    { label: 'Huéspedes',      icon: 'pi pi-user',        route: '/app/guests'        },
-    { label: 'Housekeeping',   icon: 'pi pi-sparkles',    route: '/app/housekeeping'  },
-    { label: 'Mantenimiento',  icon: 'pi pi-wrench',      route: '/app/maintenance'   },
-    { separator: true,         label: 'Finanzas',         icon: '' },
-    { label: 'Finanzas',       icon: 'pi pi-dollar',      route: '/app/finance',       roles: ['Admin', 'Manager'] },
-    { label: 'Analytics',      icon: 'pi pi-chart-line',  route: '/app/analytics',     roles: ['Admin', 'Manager'] },
-    { separator: true,         label: 'Mi cuenta',        icon: '' },
-    { label: 'Seguridad',      icon: 'pi pi-shield',      route: '/app/security' },
-    { label: 'Organización',   icon: 'pi pi-sitemap',     route: '/app/organization', roles: ['Admin'] },
-    { separator: true,         label: 'Sistema',          icon: '' },
-    { label: 'Auditoría',      icon: 'pi pi-history',     route: '/app/audit',        roles: ['Admin'] },
-    { label: 'Configuración',  icon: 'pi pi-cog',         route: '/app/settings',      roles: ['Admin'] },
+    { label: 'nav.dashboard',   icon: 'pi pi-th-large',    route: '/app'                },
+    { label: 'nav.onboarding',  icon: 'pi pi-rocket',      route: '/app/onboarding'     },
+    { label: 'nav.channels',    icon: 'pi pi-globe',       route: '/app/channels'       },
+    { label: 'nav.workflows',   icon: 'pi pi-bolt',        route: '/app/workflows'      },
+    { separator: true,          label: 'nav.section.operation', icon: '' },
+    { label: 'nav.reservations', icon: 'pi pi-calendar',   route: '/app/reservations'   },
+    { label: 'nav.calendar',    icon: 'pi pi-calendar-clock', route: '/app/calendar'    },
+    { label: 'nav.rooms',       icon: 'pi pi-building',    route: '/app/rooms'          },
+    { label: 'nav.roomTypes',   icon: 'pi pi-bed',         route: '/app/room-types'     },
+    { label: 'nav.websites',    icon: 'pi pi-globe',       route: '/app/websites'       },
+    { label: 'nav.rates',       icon: 'pi pi-money-bill',  route: '/app/rates'          },
+    { label: 'nav.guests',      icon: 'pi pi-user',        route: '/app/guests'         },
+    { label: 'nav.housekeeping', icon: 'pi pi-sparkles',   route: '/app/housekeeping'   },
+    { label: 'nav.maintenance', icon: 'pi pi-wrench',      route: '/app/maintenance'    },
+    { separator: true,          label: 'nav.section.finance', icon: '' },
+    { label: 'nav.finance',     icon: 'pi pi-dollar',      route: '/app/finance',       roles: ['Admin', 'Manager'] },
+    { label: 'nav.analytics',   icon: 'pi pi-chart-line',  route: '/app/analytics',     roles: ['Admin', 'Manager'] },
+    { separator: true,          label: 'nav.section.account', icon: '' },
+    { label: 'nav.security',    icon: 'pi pi-shield',      route: '/app/security' },
+    { label: 'nav.organization', icon: 'pi pi-sitemap',    route: '/app/organization',  roles: ['Admin'] },
+    { separator: true,          label: 'nav.section.system', icon: '' },
+    { label: 'nav.audit',       icon: 'pi pi-history',     route: '/app/audit',         roles: ['Admin'] },
+    { label: 'nav.settings',    icon: 'pi pi-cog',         route: '/app/settings',      roles: ['Admin'] },
 ];
 
 @Component({
@@ -47,14 +50,14 @@ const HOTEL_NAV: HosNavItem[] = [
     standalone: true,
     imports: [CommonModule, RouterModule],
     template: `
-        <nav class="hos-nav" aria-label="Menú principal">
+        <nav class="hos-nav" [attr.aria-label]="i18n.t('nav.mainNav')">
 
             <!-- brand dentro del sidebar -->
             <div class="hos-nav__brand">
                 <div class="hos-nav__brand-icon"><i class="pi pi-building"></i></div>
                 <div class="hos-nav__brand-text">
-                    <span class="hos-nav__brand-name">Hospitality</span>
-                    <span class="hos-nav__brand-os">OS</span>
+                    <span class="hos-nav__brand-name">{{ i18n.t('brand.hospitality') }}</span>
+                    <span class="hos-nav__brand-os">{{ i18n.t('brand.os') }}</span>
                 </div>
             </div>
 
@@ -67,7 +70,7 @@ const HOTEL_NAV: HosNavItem[] = [
                 </div>
                 @if (properties().length > 1) {
                     <button class="hos-nav__property-btn" type="button"
-                            aria-label="Cambiar de propiedad"
+                            [attr.aria-label]="i18n.t('nav.switchProperty')"
                             (click)="propertyPickerOpen.set(!propertyPickerOpen())">
                         <i class="pi pi-chevron-down"></i>
                     </button>
@@ -76,7 +79,7 @@ const HOTEL_NAV: HosNavItem[] = [
 
             @if (propertyPickerOpen() && properties().length > 1) {
                 <div class="hos-nav__picker">
-                    <span class="hos-nav__picker-title">Cambiar de propiedad</span>
+                    <span class="hos-nav__picker-title">{{ i18n.t('nav.switchProperty') }}</span>
                     @for (prop of properties(); track prop.propertyId) {
                         <button type="button" class="hos-nav__picker-item"
                                 [class.hos-nav__picker-item--active]="prop.propertyId === activePropertyId()"
@@ -93,21 +96,21 @@ const HOTEL_NAV: HosNavItem[] = [
                 @for (item of nav; track $index) {
 
                     @if (item.separator) {
-                        <li class="hos-nav__group-label">{{ item.label }}</li>
+                        <li class="hos-nav__group-label">{{ i18n.t(item.label) }}</li>
                     } @else {
                         <li>
                             <a class="hos-nav__item"
                                [routerLink]="item.route"
                                routerLinkActive="hos-nav__item--active"
                                [routerLinkActiveOptions]="{ exact: item.route === '/app' }"
-                               [attr.aria-label]="item.label + (item.soon ? ' (próximamente)' : '')">
+                               [attr.aria-label]="ariaLabel(item)">
                                 <i [class]="item.icon + ' hos-nav__icon'"></i>
-                                <span class="hos-nav__label">{{ item.label }}</span>
+                                <span class="hos-nav__label">{{ i18n.t(item.label) }}</span>
                                 @if (item.badge) {
                                     <span class="hos-nav__badge">{{ item.badge }}</span>
                                 }
                                 @if (item.soon) {
-                                    <span class="hos-nav__soon">Pronto</span>
+                                    <span class="hos-nav__soon">{{ i18n.t('nav.soon') }}</span>
                                 }
                             </a>
                         </li>
@@ -125,7 +128,7 @@ const HOTEL_NAV: HosNavItem[] = [
                     </div>
                 </div>
                 <button type="button" class="hos-nav__logout" (click)="signOut()">
-                    <i class="pi pi-sign-out"></i> Cerrar sesión
+                    <i class="pi pi-sign-out"></i> {{ i18n.t('nav.signOut') }}
                 </button>
             </div>
 
@@ -378,23 +381,30 @@ export class AppMenu implements OnInit {
     user = signal<User | null>(null);
     userName = signal('');
     userRole = signal('');
-    propertyName = signal('Sin propiedad');
+    propertyName = signal('');
     propertySub = signal('');
     properties = signal<UserProperty[]>([]);
     propertyPickerOpen = signal(false);
     activePropertyId = signal(localStorage.getItem('auth_hotel_id') ?? '');
+
+    readonly i18n = inject(I18nService);
 
     private readonly auth = inject(AuthService);
     private readonly hotels = inject(HotelService);
     private readonly organization = inject(OrganizationService);
     private readonly router = inject(Router);
 
+    ariaLabel(item: HosNavItem): string {
+        const label = this.i18n.t(item.label);
+        return item.soon ? this.i18n.tp('nav.soonSuffix', { label }) : label;
+    }
+
     ngOnInit(): void {
         this.auth.currentUser$.subscribe((user) => {
             this.user.set(user);
             this.applyNavPermissions(user);
-            this.userName.set(user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : 'Usuario');
-            this.userRole.set(user?.position || user?.roles?.[0] || 'Miembro del equipo');
+            this.userName.set(user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : this.i18n.t('nav.user'));
+            this.userRole.set(user?.position || user?.roles?.[0] || this.i18n.t('nav.teamRole'));
         });
 
         // Propiedades disponibles (selector) + propiedad activa (auth_hotel_id)
@@ -416,13 +426,14 @@ export class AppMenu implements OnInit {
                 if (hotel) {
                     this.propertyName.set(hotel.name);
                     const location = [hotel.city, hotel.country].filter(Boolean).join(', ');
-                    this.propertySub.set(`${hotel.totalRooms || 0} habitaciones${location ? ` · ${location}` : ''}`);
+                    const count = this.i18n.tp('nav.roomsCount', { count: hotel.totalRooms || 0 });
+                    this.propertySub.set(location ? `${count} · ${location}` : count);
                 } else {
-                    this.propertySub.set('Sin propiedad configurada');
+                    this.propertySub.set(this.i18n.t('nav.noPropertyConfig'));
                 }
             },
             error: () => {
-                this.propertySub.set('Pendiente de cargar');
+                this.propertySub.set(this.i18n.t('nav.pendingLoad'));
             }
         });
     }
